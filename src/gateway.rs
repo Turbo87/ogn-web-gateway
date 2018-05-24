@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use ws_client::WSClient;
-use ogn_client::OGNRecord;
+use actix_ogn::OGNMessage;
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -64,16 +64,16 @@ impl Handler<Disconnect> for Gateway {
     }
 }
 
-impl Handler<OGNRecord> for Gateway {
+impl Handler<OGNMessage> for Gateway {
     type Result = ();
 
-    fn handle(&mut self, record: OGNRecord, _: &mut Context<Self>) {
+    fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         // log record to the console
-        println!("{:.4} {:.4} {}", record.record.longitude, record.record.latitude, record.record.raw);
+        println!("{}", message.raw);
 
         // distribute record to all connected websocket clients
         for addr in self.sessions.values() {
-            addr.do_send(record.clone());
+            addr.do_send(message.clone());
         }
     }
 }

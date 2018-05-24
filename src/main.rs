@@ -2,23 +2,19 @@ extern crate futures;
 extern crate rand;
 extern crate tokio_core;
 extern crate tokio_io;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
 
 #[macro_use]
 extern crate actix;
 extern crate actix_web;
+extern crate actix_ogn;
 
 use actix::*;
 use actix_web::server::HttpServer;
 use actix_web::{fs, http, ws, App, HttpResponse};
+use actix_ogn::OGNActor;
 
-mod ogn_client;
 mod gateway;
 mod ws_client;
-
-use ogn_client::OGNClient;
 
 fn main() {
     let sys = actix::System::new("ogn-ws-gateway");
@@ -29,7 +25,7 @@ fn main() {
     // Start OGN client in separate thread
     // TODO: Restart when connection drops
     let gw = gateway.clone();
-    Arbiter::start(|_| OGNClient::new(gw.recipient()));
+    Arbiter::start(|_| OGNActor::new(gw.recipient()));
 
     // Create Http server with websocket support
     HttpServer::new(move || {

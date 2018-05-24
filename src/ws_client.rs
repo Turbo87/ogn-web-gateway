@@ -1,8 +1,8 @@
 use actix::*;
 use actix_web::ws;
+use actix_ogn::OGNMessage;
 
 use gateway;
-use ogn_client::OGNRecord;
 
 pub struct WSClientState {
     addr: Addr<Syn, gateway::Gateway>,
@@ -54,12 +54,12 @@ impl Actor for WSClient {
     }
 }
 
-impl Handler<OGNRecord> for WSClient {
+impl Handler<OGNMessage> for WSClient {
     type Result = ();
 
-    fn handle(&mut self, record: OGNRecord, ctx: &mut Self::Context) {
+    fn handle(&mut self, message: OGNMessage, ctx: &mut Self::Context) {
         // Pass raw APRS record to the WebSocket
-        ctx.text(record.record.raw);
+        ctx.text(message.raw);
     }
 }
 
