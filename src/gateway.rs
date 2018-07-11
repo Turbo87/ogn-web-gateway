@@ -75,11 +75,12 @@ impl Handler<OGNMessage> for Gateway {
             let time = time_to_datetime(chrono::Utc::now().naive_utc(), position.time);
 
             let ws_message = format!(
-                "{}|{}|{:.6}|{:.6}",
+                "{}|{}|{:.6}|{:.6}|{}",
                 position.id,
                 time.timestamp(),
                 position.longitude,
                 position.latitude,
+                position.course,
             );
 
             // log record to the console

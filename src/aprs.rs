@@ -6,6 +6,7 @@ pub struct APRSPosition<'a> {
     pub time: NaiveTime,
     pub latitude: f64,
     pub longitude: f64,
+    pub course: i32,
 }
 
 pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
@@ -59,7 +60,9 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             if hemisphere == "E" { angle } else { -angle }
         };
 
-        APRSPosition { id, time, latitude, longitude }
+        let course = caps.name("course").unwrap().as_str().parse::<i32>().unwrap();
+
+        APRSPosition { id, time, latitude, longitude, course }
     })
 }
 
