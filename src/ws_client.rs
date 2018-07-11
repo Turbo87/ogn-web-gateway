@@ -66,7 +66,7 @@ impl Handler<OGNMessage> for WSClient {
 /// WebSocket message handler
 impl StreamHandler<ws::Message, ws::ProtocolError> for WSClient {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-        println!("WEBSOCKET MESSAGE: {:?}", msg);
+        debug!("WEBSOCKET MESSAGE: {:?}", msg);
 
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),

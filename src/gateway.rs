@@ -37,7 +37,7 @@ impl Handler<Connect> for Gateway {
     type Result = usize;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
-        println!("Client connected ({} clients)", self.sessions.len());
+        debug!("Client connected ({} clients)", self.sessions.len());
 
         // register session with random id
         let id = self.rng.borrow_mut().gen::<usize>();
@@ -60,7 +60,7 @@ impl Handler<Disconnect> for Gateway {
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
         self.sessions.remove(&msg.id);
 
-        println!("Client disconnected ({} clients)", self.sessions.len());
+        debug!("Client disconnected ({} clients)", self.sessions.len());
     }
 }
 
@@ -69,7 +69,7 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         // log record to the console
-        println!("{}", message.raw);
+        trace!("{}", message.raw);
 
         // distribute record to all connected websocket clients
         for addr in self.sessions.values() {

@@ -1,3 +1,6 @@
+extern crate pretty_env_logger;
+#[macro_use] extern crate log;
+
 extern crate futures;
 extern crate rand;
 extern crate tokio_core;
@@ -17,6 +20,8 @@ mod gateway;
 mod ws_client;
 
 fn main() {
+    pretty_env_logger::init();
+
     let sys = actix::System::new("ogn-ws-gateway");
 
     // Start "gateway" actor in separate thread
@@ -47,7 +52,7 @@ fn main() {
         .unwrap()
         .start();
 
-    println!("Started http server: 127.0.0.1:8080");
+    info!("Started http server: 127.0.0.1:8080");
 
     sys.run();
 }
