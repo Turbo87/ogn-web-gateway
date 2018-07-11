@@ -5,12 +5,12 @@ use actix_ogn::OGNMessage;
 use gateway;
 
 pub struct WSClientState {
-    addr: Addr<Syn, gateway::Gateway>,
+    gateway: Addr<Syn, gateway::Gateway>,
 }
 
 impl WSClientState {
-    pub fn new(addr: Addr<Syn, gateway::Gateway>) -> WSClientState {
-        WSClientState { addr }
+    pub fn new(gateway: Addr<Syn, gateway::Gateway>) -> WSClientState {
+        WSClientState { gateway }
     }
 }
 
@@ -33,7 +33,7 @@ impl Actor for WSClient {
     fn started(&mut self, ctx: &mut Self::Context) {
         // register self in gateway.
         let addr: Addr<Syn, _> = ctx.address();
-        ctx.state().addr
+        ctx.state().gateway
             .send(gateway::Connect { addr })
             .into_actor(self)
             .then(|res, act, ctx| {
@@ -49,7 +49,7 @@ impl Actor for WSClient {
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         // notify gateway
-        ctx.state().addr.do_send(gateway::Disconnect { id: self.id });
+        ctx.state().gateway.do_send(gateway::Disconnect { id: self.id });
         Running::Stop
     }
 }
