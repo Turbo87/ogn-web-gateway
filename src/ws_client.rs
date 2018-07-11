@@ -3,16 +3,7 @@ use actix_web::ws;
 use actix_ogn::OGNMessage;
 
 use gateway;
-
-pub struct WSClientState {
-    gateway: Addr<Syn, gateway::Gateway>,
-}
-
-impl WSClientState {
-    pub fn new(gateway: Addr<Syn, gateway::Gateway>) -> WSClientState {
-        WSClientState { gateway }
-    }
-}
+use AppState;
 
 pub struct WSClient {
     /// unique session id
@@ -28,7 +19,7 @@ impl Default for WSClient {
 }
 
 impl Actor for WSClient {
-    type Context = ws::WebsocketContext<Self, WSClientState>;
+    type Context = ws::WebsocketContext<Self, AppState>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // register self in gateway.

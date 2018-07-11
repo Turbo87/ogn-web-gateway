@@ -19,6 +19,10 @@ use actix_ogn::OGNActor;
 mod gateway;
 mod ws_client;
 
+pub struct AppState {
+    gateway: Addr<Syn, gateway::Gateway>,
+}
+
 fn main() {
     pretty_env_logger::init();
 
@@ -34,8 +38,9 @@ fn main() {
 
     // Create Http server with websocket support
     HttpServer::new(move || {
-        // Websocket sessions state
-        let state = ws_client::WSClientState::new(gateway.clone());
+        let state = AppState {
+            gateway: gateway.clone(),
+        };
 
         App::with_state(state)
             // redirect to websocket.html
