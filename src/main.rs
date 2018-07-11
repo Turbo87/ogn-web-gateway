@@ -30,6 +30,7 @@ pub struct AppState {
 fn main() {
     // reads sentry DSN from `SENTRY_DSN` environment variable
     let _sentry = sentry::init(());
+    sentry::integrations::panic::register_panic_handler();
 
     setup_logging();
 
