@@ -14,12 +14,19 @@ extern crate regex;
 
 extern crate sentry;
 
+extern crate serde;
+#[macro_use] extern crate serde_derive;
+
+extern crate systemstat;
+
 use actix::*;
 use actix_web::server::HttpServer;
-use actix_web::{fs, http, ws, App, HttpResponse};
+use actix_web::{fs, http, ws, App, HttpResponse, HttpRequest, Responder, Json};
 use actix_ogn::OGNActor;
 
 use std::env;
+
+use systemstat::Platform;
 
 mod aprs;
 mod gateway;
@@ -59,6 +66,7 @@ fn main() {
                     .header("LOCATION", "/static/websocket.html")
                     .finish()
             }))
+            .resource("/api/status", |r| r.method(http::Method::GET).with(status))
             // websocket
             .resource("/ws/", |r| r.route().f(|req| ws::start(req, ws_client::WSClient::default())))
             // static resources
@@ -83,4 +91,17 @@ fn setup_logging() {
         ..Default::default()
     };
     sentry::integrations::log::init(Some(Box::new(logger)), options);
+}
+
+#[derive(Serialize)]
+struct Status {
+    load: Option<(f32, f32, f32)>,
+}
+
+fn status(_req: HttpRequest<AppState>) -> impl Responder {
+    let sys = systemstat::System::new();
+
+    Json(Status {
+        load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
+    })
 }
