@@ -2,10 +2,10 @@ use chrono::NaiveTime;
 use regex::Regex;
 
 pub struct APRSPosition<'a> {
+    pub id: &'a str,
     pub time: NaiveTime,
     pub latitude: f64,
     pub longitude: f64,
-    pub id: &'a str,
 }
 
 pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
@@ -36,6 +36,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
     }
 
     RE.captures(line).map(|caps| {
+        let id = caps.name("id").unwrap().as_str();
+
         let time = {
             let hhmmss = caps.name("time").unwrap().as_str();
             NaiveTime::parse_from_str(hhmmss, "%H%M%S").unwrap()
@@ -57,9 +59,7 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             if hemisphere == "E" { angle } else { -angle }
         };
 
-        let id = caps.name("id").unwrap().as_str();
-
-        APRSPosition { time, latitude, longitude, id }
+        APRSPosition { id, time, latitude, longitude }
     })
 }
 
