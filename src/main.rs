@@ -18,6 +18,8 @@ use actix_web::server::HttpServer;
 use actix_web::{fs, http, ws, App, HttpResponse};
 use actix_ogn::OGNActor;
 
+use std::env;
+
 mod gateway;
 mod ws_client;
 
@@ -29,7 +31,7 @@ fn main() {
     // reads sentry DSN from `SENTRY_DSN` environment variable
     let _sentry = sentry::init(());
 
-    pretty_env_logger::init();
+    setup_logging();
 
     let sys = actix::System::new("ogn-ws-gateway");
 
@@ -65,4 +67,17 @@ fn main() {
     info!("Started http server: 127.0.0.1:8080");
 
     sys.run();
+}
+
+fn setup_logging() {
+    let mut log_builder = pretty_env_logger::formatted_builder().unwrap();
+    if let Ok(s) = env::var("RUST_LOG") {
+        log_builder.parse(&s);
+    }
+    let logger = log_builder.build();
+    let options = sentry::integrations::log::LoggerOptions {
+        global_filter: Some(logger.filter()),
+        ..Default::default()
+    };
+    sentry::integrations::log::init(Some(Box::new(logger)), options);
 }
