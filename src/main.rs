@@ -40,9 +40,8 @@ fn main() {
     let gateway: Addr<_> = Arbiter::start(|_| gateway::Gateway::default());
 
     // Start OGN client in separate thread
-    // TODO: Restart when connection drops
     let gw = gateway.clone();
-    Arbiter::start(|_| OGNActor::new(gw.recipient()));
+    let _ogn_addr: Addr<_> = Supervisor::start(|_| OGNActor::new(gw.recipient()));
 
     // Create Http server with websocket support
     HttpServer::new(move || {
