@@ -9,7 +9,7 @@ use actix_ogn::OGNMessage;
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
 pub struct Gateway {
-    sessions: HashMap<usize, Addr<Syn, WSClient>>,
+    sessions: HashMap<usize, Addr<WSClient>>,
     rng: RefCell<ThreadRng>,
 }
 
@@ -30,7 +30,7 @@ impl Actor for Gateway {
 #[derive(Message)]
 #[rtype(usize)]
 pub struct Connect {
-    pub addr: Addr<Syn, WSClient>,
+    pub addr: Addr<WSClient>,
 }
 
 impl Handler<Connect> for Gateway {

@@ -24,7 +24,7 @@ mod gateway;
 mod ws_client;
 
 pub struct AppState {
-    gateway: Addr<Syn, gateway::Gateway>,
+    gateway: Addr<gateway::Gateway>,
 }
 
 fn main() {
@@ -37,7 +37,7 @@ fn main() {
     let sys = actix::System::new("ogn-ws-gateway");
 
     // Start "gateway" actor in separate thread
-    let gateway: Addr<Syn, _> = Arbiter::start(|_| gateway::Gateway::default());
+    let gateway: Addr<_> = Arbiter::start(|_| gateway::Gateway::default());
 
     // Start OGN client in separate thread
     // TODO: Restart when connection drops
@@ -60,7 +60,7 @@ fn main() {
             // websocket
             .resource("/ws/", |r| r.route().f(|req| ws::start(req, ws_client::WSClient::default())))
             // static resources
-            .handler("/static/", fs::StaticFiles::new("static/"))
+            .handler("/static/", fs::StaticFiles::new("static/").unwrap())
     }).bind("127.0.0.1:8080")
         .unwrap()
         .start();

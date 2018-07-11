@@ -23,7 +23,7 @@ impl Actor for WSClient {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // register self in gateway.
-        let addr: Addr<Syn, _> = ctx.address();
+        let addr: Addr<_> = ctx.address();
         ctx.state().gateway
             .send(gateway::Connect { addr })
             .into_actor(self)
