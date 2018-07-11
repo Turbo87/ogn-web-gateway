@@ -2,7 +2,7 @@ use actix::*;
 use actix_web::ws;
 
 use gateway;
-use AppState;
+use app::AppState;
 
 pub struct WSClient;
 
