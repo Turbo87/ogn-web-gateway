@@ -23,6 +23,7 @@ use std::env;
 
 mod aprs;
 mod gateway;
+mod time;
 mod ws_client;
 
 pub struct AppState {
