@@ -3,13 +3,14 @@ use actix::prelude::*;
 use rand::{self, Rng, ThreadRng};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::time::Duration;
 
 use aprs;
 use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use time::time_to_datetime;
 
-use db::DbExecutor;
+use db::{DbExecutor, DropOldOGNPositions};
 use db::models::CreateOGNPosition;
 
 /// `Gateway` manages connected websocket clients and distributes
@@ -28,10 +29,21 @@ impl Gateway {
             rng: RefCell::new(rand::thread_rng()),
         }
     }
+
+    fn schedule_db_cleanup(ctx: &mut Context<Self>) {
+        ctx.run_later(Duration::from_secs(30 * 60), |act, ctx| {
+            act.db.do_send(DropOldOGNPositions);
+            Self::schedule_db_cleanup(ctx);
+        });
+    }
 }
 
 impl Actor for Gateway {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        Self::schedule_db_cleanup(ctx);
+    }
 }
 
 pub struct RequestStatus;
