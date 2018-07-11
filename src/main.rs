@@ -8,6 +8,10 @@ extern crate actix;
 extern crate actix_web;
 extern crate actix_ogn;
 
+extern crate chrono;
+extern crate regex;
+#[macro_use] extern crate lazy_static;
+
 extern crate sentry;
 
 use actix::*;
@@ -17,6 +21,7 @@ use actix_ogn::OGNActor;
 
 use std::env;
 
+mod aprs;
 mod gateway;
 mod ws_client;
 

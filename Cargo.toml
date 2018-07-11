@@ -13,4 +13,8 @@ actix = "0.7"
 actix-web = { git = "https://github.com/actix/actix-web" }
 actix-ogn = "0.2"
 
+chrono = "0.4.4"
+regex = "1"
+lazy_static = "1.0.1"
+
 sentry = "0.6.0"
