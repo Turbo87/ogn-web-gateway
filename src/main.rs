@@ -11,6 +11,8 @@ extern crate actix;
 extern crate actix_web;
 extern crate actix_ogn;
 
+extern crate sentry;
+
 use actix::*;
 use actix_web::server::HttpServer;
 use actix_web::{fs, http, ws, App, HttpResponse};
@@ -24,6 +26,9 @@ pub struct AppState {
 }
 
 fn main() {
+    // reads sentry DSN from `SENTRY_DSN` environment variable
+    let _sentry = sentry::init(());
+
     pretty_env_logger::init();
 
     let sys = actix::System::new("ogn-ws-gateway");

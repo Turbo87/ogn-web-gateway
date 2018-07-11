@@ -15,3 +15,5 @@ tokio-core = "0.1"
 actix = "0.5"
 actix-web = "^0.6"
 actix-ogn = "0.1"
+
+sentry = "0.6.0"
