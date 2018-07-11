@@ -48,7 +48,7 @@ fn main() {
 
     setup_logging();
 
-    let sys = actix::System::new("ogn-ws-gateway");
+    let sys = actix::System::new("ogn-web-gateway");
 
     // Start "gateway" actor in separate thread
     let gateway: Addr<_> = Arbiter::start(|_| Gateway::new());
