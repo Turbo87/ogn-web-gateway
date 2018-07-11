@@ -12,6 +12,18 @@
         control.html(control.html() + msg + '<br/>');
         control.scrollTop(control.scrollTop() + 1000);
       }
+
+      function parseMessage(message) {
+        var fields = message.split('|');
+
+        return {
+          id: fields[0],
+          timestamp: parseInt(fields[1], 10),
+          longitude: parseFloat(fields[2]),
+          latitude: parseFloat(fields[3]),
+        };
+      }
+
       function connect() {
         disconnect();
         var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
@@ -22,7 +34,8 @@
           update_ui();
         };
         conn.onmessage = function(e) {
-          log('Received: ' + e.data);
+          var message = parseMessage(e.data);
+          console.log(message);
         };
         conn.onclose = function() {
           log('Disconnected.');
