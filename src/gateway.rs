@@ -9,16 +9,21 @@ use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use time::time_to_datetime;
 
+use db::DbExecutor;
+use db::models::CreateOGNPosition;
+
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
 pub struct Gateway {
+    db: Addr<DbExecutor>,
     sessions: HashMap<usize, Addr<WSClient>>,
     rng: RefCell<ThreadRng>,
 }
 
 impl Gateway {
-    pub fn new() -> Gateway {
+    pub fn new(db: Addr<DbExecutor>) -> Gateway {
         Gateway {
+            db,
             sessions: HashMap::new(),
             rng: RefCell::new(rand::thread_rng()),
         }
@@ -110,6 +115,13 @@ impl Handler<OGNMessage> for Gateway {
             for addr in self.sessions.values() {
                 addr.do_send(SendText(ws_message.clone()));
             }
+
+            self.db.do_send(CreateOGNPosition {
+                ogn_id: position.id.to_owned(),
+                time,
+                longitude: position.longitude,
+                latitude: position.latitude,
+            })
         }
     }
 }

@@ -9,6 +9,8 @@ extern crate actix_web;
 extern crate actix_ogn;
 extern crate futures;
 
+#[macro_use]
+extern crate diesel;
 extern crate chrono;
 extern crate regex;
 #[macro_use] extern crate lazy_static;
@@ -26,18 +28,24 @@ use actix_web::{fs, http, ws, App, HttpResponse, HttpRequest, Responder, Json, A
 use actix_ogn::OGNActor;
 use futures::future::Future;
 
+use diesel::prelude::*;
+use diesel::r2d2::{ConnectionManager, Pool};
+
 use std::env;
 
 use systemstat::Platform;
 
 mod aprs;
+mod db;
 mod gateway;
 mod time;
 mod ws_client;
 
+use db::DbExecutor;
 use gateway::Gateway;
 
 pub struct AppState {
+    db: Addr<DbExecutor>,
     gateway: Addr<Gateway>,
 }
 
@@ -48,10 +56,24 @@ fn main() {
 
     setup_logging();
 
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+
     let sys = actix::System::new("ogn-web-gateway");
 
+    let db_connection_manager = ConnectionManager::<PgConnection>::new(database_url);
+    let db_pool = Pool::builder()
+        .max_size(3)
+        .build(db_connection_manager)
+        .expect("Failed to create pool.");
+
+    let db_executor_addr = SyncArbiter::start(3, move || {
+        DbExecutor::new(db_pool.clone())
+    });
+
     // Start "gateway" actor in separate thread
-    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new());
+    let gateway_db_addr = db_executor_addr.clone();
+    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new(gateway_db_addr));
 
     // Start OGN client in separate thread
     let gw = gateway.clone();
@@ -60,6 +82,7 @@ fn main() {
     // Create Http server with websocket support
     HttpServer::new(move || {
         let state = AppState {
+            db: db_executor_addr.clone(),
             gateway: gateway.clone(),
         };
 

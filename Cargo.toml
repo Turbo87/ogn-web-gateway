@@ -23,4 +23,6 @@ sentry = "0.6.0"
 serde = "1.0.70"
 serde_derive = "1.0.70"
 
+diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] }
+
 systemstat = { git = "https://github.com/myfreeweb/systemstat" }
