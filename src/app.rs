@@ -4,7 +4,7 @@ use futures::future::Future;
 
 use systemstat::{self, Platform};
 
-use db::DbExecutor;
+use db::{self, DbExecutor};
 use gateway::{self, Gateway};
 use ws_client::WSClient;
 
@@ -32,17 +32,21 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
 struct Status {
     load: Option<(f32, f32, f32)>,
     users: usize,
+    positions: Option<i64>,
 }
 
 fn status(req: HttpRequest<AppState>) -> impl Responder {
-    req.state().gateway.send(gateway::RequestStatus).from_err::<Error>()
-        .and_then(|res| {
-            let sys = systemstat::System::new();
+    Future::join(
+        req.state().gateway.send(gateway::RequestStatus).from_err::<Error>(),
+        req.state().db.send(db::CountOGNPositions).from_err::<Error>()
+    ).and_then(|(gateway_status, position_count)| {
+        let sys = systemstat::System::new();
 
-            Ok(Json(Status {
-                load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
-                users: res.users,
-            }))
-        })
-        .responder()
+        Ok(Json(Status {
+            load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
+            users: gateway_status.users,
+            positions: position_count,
+        }))
+    })
+    .responder()
 }

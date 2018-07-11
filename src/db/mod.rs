@@ -61,3 +61,29 @@ impl Handler<DropOldOGNPositions> for DbExecutor {
         }
     }
 }
+
+pub struct CountOGNPositions;
+
+impl Message for CountOGNPositions {
+    type Result = Option<i64>;
+}
+
+impl Handler<CountOGNPositions> for DbExecutor {
+    type Result = Option<i64>;
+
+    fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
+        use db::schema::ogn_positions::dsl::ogn_positions;
+
+        let conn: &PgConnection = &self.pool.get().unwrap();
+
+        let result = ogn_positions.count().get_result(conn);
+
+        match result {
+            Ok(count) => Some(count),
+            Err(error) => {
+                error!("Could not count OGN position records: {}", error);
+                None
+            },
+        }
+    }
+}
