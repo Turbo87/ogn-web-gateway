@@ -35,8 +35,10 @@ mod gateway;
 mod time;
 mod ws_client;
 
+use gateway::Gateway;
+
 pub struct AppState {
-    gateway: Addr<gateway::Gateway>,
+    gateway: Addr<Gateway>,
 }
 
 fn main() {
@@ -49,7 +51,7 @@ fn main() {
     let sys = actix::System::new("ogn-ws-gateway");
 
     // Start "gateway" actor in separate thread
-    let gateway: Addr<_> = Arbiter::start(|_| gateway::Gateway::default());
+    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new());
 
     // Start OGN client in separate thread
     let gw = gateway.clone();

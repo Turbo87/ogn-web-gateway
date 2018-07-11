@@ -16,8 +16,8 @@ pub struct Gateway {
     rng: RefCell<ThreadRng>,
 }
 
-impl Default for Gateway {
-    fn default() -> Gateway {
+impl Gateway {
+    pub fn new() -> Gateway {
         Gateway {
             sessions: HashMap::new(),
             rng: RefCell::new(rand::thread_rng()),
