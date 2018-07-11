@@ -7,6 +7,7 @@ extern crate rand;
 extern crate actix;
 extern crate actix_web;
 extern crate actix_ogn;
+extern crate futures;
 
 extern crate chrono;
 extern crate regex;
@@ -21,8 +22,9 @@ extern crate systemstat;
 
 use actix::*;
 use actix_web::server::HttpServer;
-use actix_web::{fs, http, ws, App, HttpResponse, HttpRequest, Responder, Json};
+use actix_web::{fs, http, ws, App, HttpResponse, HttpRequest, Responder, Json, AsyncResponder, Error};
 use actix_ogn::OGNActor;
+use futures::future::Future;
 
 use std::env;
 
@@ -96,12 +98,18 @@ fn setup_logging() {
 #[derive(Serialize)]
 struct Status {
     load: Option<(f32, f32, f32)>,
+    users: usize,
 }
 
-fn status(_req: HttpRequest<AppState>) -> impl Responder {
-    let sys = systemstat::System::new();
+fn status(req: HttpRequest<AppState>) -> impl Responder {
+    req.state().gateway.send(gateway::RequestStatus).from_err::<Error>()
+        .and_then(|res| {
+            let sys = systemstat::System::new();
 
-    Json(Status {
-        load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
-    })
+            Ok(Json(Status {
+                load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
+                users: res.users,
+            }))
+        })
+        .responder()
 }

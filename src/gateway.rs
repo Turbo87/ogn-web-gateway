@@ -29,6 +29,26 @@ impl Actor for Gateway {
     type Context = Context<Self>;
 }
 
+pub struct RequestStatus;
+
+impl Message for RequestStatus {
+    type Result = StatusResponse;
+}
+
+pub struct StatusResponse {
+    pub users: usize,
+}
+
+impl Handler<RequestStatus> for Gateway {
+    type Result = MessageResult<RequestStatus>;
+
+    fn handle(&mut self, _msg: RequestStatus, _ctx: &mut Context<Self>) -> Self::Result {
+        MessageResult(StatusResponse {
+            users: self.sessions.len()
+        })
+    }
+}
+
 /// New websocket client has connected.
 #[derive(Message)]
 #[rtype(usize)]
