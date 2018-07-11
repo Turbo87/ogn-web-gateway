@@ -1,8 +1,6 @@
 use chrono;
 use actix::prelude::*;
-use rand::{self, Rng, ThreadRng};
-use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::time::Duration;
 
 use aprs;
@@ -17,16 +15,14 @@ use db::models::CreateOGNPosition;
 /// `OGNRecord` messages to them.
 pub struct Gateway {
     db: Addr<DbExecutor>,
-    sessions: HashMap<usize, Addr<WSClient>>,
-    rng: RefCell<ThreadRng>,
+    sessions: HashSet<Addr<WSClient>>,
 }
 
 impl Gateway {
     pub fn new(db: Addr<DbExecutor>) -> Gateway {
         Gateway {
             db,
-            sessions: HashMap::new(),
-            rng: RefCell::new(rand::thread_rng()),
+            sessions: HashSet::new(),
         }
     }
 
@@ -68,37 +64,32 @@ impl Handler<RequestStatus> for Gateway {
 
 /// New websocket client has connected.
 #[derive(Message)]
-#[rtype(usize)]
 pub struct Connect {
     pub addr: Addr<WSClient>,
 }
 
 impl Handler<Connect> for Gateway {
-    type Result = usize;
+    type Result = ();
 
-    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) {
         debug!("Client connected ({} clients)", self.sessions.len());
 
         // register session with random id
-        let id = self.rng.borrow_mut().gen::<usize>();
-        self.sessions.insert(id, msg.addr);
-
-        // send id back
-        id
+        self.sessions.insert(msg.addr);
     }
 }
 
 /// Websocket client has disconnected.
 #[derive(Message)]
 pub struct Disconnect {
-    pub id: usize,
+    pub addr: Addr<WSClient>,
 }
 
 impl Handler<Disconnect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        self.sessions.remove(&msg.id);
+        self.sessions.remove(&msg.addr);
 
         debug!("Client disconnected ({} clients)", self.sessions.len());
     }
@@ -124,7 +115,7 @@ impl Handler<OGNMessage> for Gateway {
             trace!("{}", ws_message);
 
             // distribute record to all connected websocket clients
-            for addr in self.sessions.values() {
+            for addr in &self.sessions {
                 addr.do_send(SendText(ws_message.clone()));
             }
 

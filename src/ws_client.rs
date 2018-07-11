@@ -4,16 +4,11 @@ use actix_web::ws;
 use gateway;
 use AppState;
 
-pub struct WSClient {
-    /// unique session id
-    id: usize,
-}
+pub struct WSClient;
 
 impl Default for WSClient {
     fn default() -> WSClient {
-        WSClient {
-            id: 0,
-        }
+        WSClient
     }
 }
 
@@ -23,23 +18,14 @@ impl Actor for WSClient {
     fn started(&mut self, ctx: &mut Self::Context) {
         // register self in gateway.
         let addr: Addr<_> = ctx.address();
-        ctx.state().gateway
-            .send(gateway::Connect { addr })
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Ok(res) => act.id = res,
-                    // something is wrong with the gateway
-                    _ => ctx.stop(),
-                }
-                fut::ok(())
-            })
-            .wait(ctx);
+        ctx.state().gateway.do_send(gateway::Connect { addr });
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         // notify gateway
-        ctx.state().gateway.do_send(gateway::Disconnect { id: self.id });
+        let addr: Addr<_> = ctx.address();
+        ctx.state().gateway.do_send(gateway::Disconnect { addr });
+
         Running::Stop
     }
 }
