@@ -1,10 +1,13 @@
+use chrono;
 use actix::prelude::*;
 use rand::{self, Rng, ThreadRng};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use ws_client::WSClient;
+use aprs;
+use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
+use time::time_to_datetime;
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -68,12 +71,24 @@ impl Handler<OGNMessage> for Gateway {
     type Result = ();
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
-        // log record to the console
-        trace!("{}", message.raw);
+        if let Some(position) = aprs::parse(&message.raw) {
+            let time = time_to_datetime(chrono::Utc::now().naive_utc(), position.time);
 
-        // distribute record to all connected websocket clients
-        for addr in self.sessions.values() {
-            addr.do_send(message.clone());
+            let ws_message = format!(
+                "{}|{}|{:.6}|{:.6}",
+                position.id,
+                time.timestamp(),
+                position.longitude,
+                position.latitude,
+            );
+
+            // log record to the console
+            trace!("{}", ws_message);
+
+            // distribute record to all connected websocket clients
+            for addr in self.sessions.values() {
+                addr.do_send(SendText(ws_message.clone()));
+            }
         }
     }
 }
