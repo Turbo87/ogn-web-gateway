@@ -1,10 +1,7 @@
 extern crate pretty_env_logger;
 #[macro_use] extern crate log;
 
-extern crate futures;
 extern crate rand;
-extern crate tokio_core;
-extern crate tokio_io;
 
 #[macro_use]
 extern crate actix;
