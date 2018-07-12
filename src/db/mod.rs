@@ -7,7 +7,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 pub mod models;
 pub mod schema;
 
-use db::models::{OGNPosition, CreateOGNPosition};
+use db::models::OGNPosition;
 
 pub struct DbExecutor {
     pub pool: Pool<ConnectionManager<PgConnection>>,
@@ -23,16 +23,21 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
-impl Handler<CreateOGNPosition> for DbExecutor {
+#[derive(Message)]
+pub struct CreateOGNPositions {
+    pub positions: Vec<OGNPosition>,
+}
+
+impl Handler<CreateOGNPositions> for DbExecutor {
     type Result = ();
 
-    fn handle(&mut self, data: CreateOGNPosition, _ctx: &mut Self::Context) -> () {
+    fn handle(&mut self, msg: CreateOGNPositions, _ctx: &mut Self::Context) -> () {
         use db::schema::ogn_positions::dsl::ogn_positions;
 
         let conn: &PgConnection = &self.pool.get().unwrap();
 
         let result = diesel::insert_into(ogn_positions)
-            .values(&data)
+            .values(&msg.positions)
             .on_conflict_do_nothing()
             .execute(conn);
 

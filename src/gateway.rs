@@ -8,8 +8,8 @@ use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use time::time_to_datetime;
 
-use db::{DbExecutor, DropOldOGNPositions};
-use db::models::CreateOGNPosition;
+use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
+use db::models::OGNPosition;
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -17,6 +17,7 @@ pub struct Gateway {
     db: Addr<DbExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
+    db_buffer: Vec<OGNPosition>,
 }
 
 impl Gateway {
@@ -25,7 +26,28 @@ impl Gateway {
             db,
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
+            db_buffer: Vec::new(),
         }
+    }
+
+    fn schedule_db_flush(ctx: &mut Context<Self>) {
+        ctx.run_later(Duration::from_secs(5), |act, ctx| {
+            let buffer = act.db_buffer.split_off(0);
+
+            let count = buffer.len();
+            if count > 0 {
+                match act.db.try_send(CreateOGNPositions { positions: buffer }) {
+                    Ok(_) => {
+                        debug!("Flushed {} OGN position records to the database", count);
+                    }
+                    Err(error) => {
+                        error!("Could not flush new OGN position records to the database: {}", error);
+                    }
+                }
+            }
+
+            Self::schedule_db_flush(ctx);
+        });
     }
 
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
@@ -40,6 +62,7 @@ impl Actor for Gateway {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        Self::schedule_db_flush(ctx);
         Self::schedule_db_cleanup(ctx);
     }
 }
@@ -165,13 +188,13 @@ impl Handler<OGNMessage> for Gateway {
             }
 
             // save record in the database
-            self.db.do_send(CreateOGNPosition {
+            self.db_buffer.push(OGNPosition {
                 ogn_id: position.id.to_owned(),
                 time,
                 longitude: position.longitude,
                 latitude: position.latitude,
                 altitude: position.altitude as i32,
-            })
+            });
         }
     }
 }
