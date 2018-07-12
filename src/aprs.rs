@@ -1,11 +1,14 @@
 use chrono::NaiveTime;
 use regex::Regex;
 
+use units::FeetToMeter;
+
 pub struct APRSPosition<'a> {
     pub id: &'a str,
     pub time: NaiveTime,
     pub latitude: f64,
     pub longitude: f64,
+    pub altitude: f64,
     pub course: i32,
 }
 
@@ -30,7 +33,7 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             /                          # separator
             (?P<speed>\d{3})           # speed in unknown units
             /                          # separator
-            A=(?P<alt>\d{6})           # altitude in unknown units
+            A=(?P<alt>\d{6})           # altitude in feet (converted to meters)
             .*                         # (irrelevant)
             \x20id(?P<id>[\dA-F]{8})   # OGN device ID
         ").unwrap();
@@ -62,7 +65,9 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
 
         let course = caps.name("course").unwrap().as_str().parse::<i32>().unwrap();
 
-        APRSPosition { id, time, latitude, longitude, course }
+        let altitude = caps.name("alt").unwrap().as_str().parse::<f64>().unwrap().feet_to_meter();
+
+        APRSPosition { id, time, latitude, longitude, altitude, course }
     })
 }
 
@@ -80,6 +85,7 @@ mod tests {
         assert_eq!(position.time, "14:19:56".parse().unwrap());
         assert_relative_eq!(position.latitude, 49.186333333333333);
         assert_relative_eq!(position.longitude, 8.2655);
+        assert_relative_eq!(position.altitude, 1132.6368);
         assert_eq!(position.course, 126);
     }
 
@@ -93,6 +99,7 @@ mod tests {
         assert_eq!(position.time, "14:19:53".parse().unwrap());
         assert_relative_eq!(position.latitude, 51.783833333333334);
         assert_relative_eq!(position.longitude, -1.15);
+        assert_relative_eq!(position.altitude, 1037.844);
         assert_eq!(position.course, 210);
     }
 
@@ -106,6 +113,7 @@ mod tests {
         assert_eq!(position.time, "14:19:50".parse().unwrap());
         assert_relative_eq!(position.latitude, 48.3055);
         assert_relative_eq!(position.longitude, 4.031166666666667);
+        assert_relative_eq!(position.altitude, 1584.6552);
         assert_eq!(position.course, 14);
     }
 }
