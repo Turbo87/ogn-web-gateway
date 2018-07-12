@@ -45,6 +45,8 @@ use app::build_app;
 use db::DbExecutor;
 use gateway::Gateway;
 
+const DB_WORKERS: usize = 3;
+
 fn main() {
     // reads sentry DSN from `SENTRY_DSN` environment variable
     let _sentry = sentry::init(());
@@ -59,11 +61,11 @@ fn main() {
 
     let db_connection_manager = ConnectionManager::<PgConnection>::new(database_url);
     let db_pool = Pool::builder()
-        .max_size(3)
+        .max_size(DB_WORKERS as u32)
         .build(db_connection_manager)
         .expect("Failed to create pool.");
 
-    let db_executor_addr = SyncArbiter::start(3, move || {
+    let db_executor_addr = SyncArbiter::start(DB_WORKERS, move || {
         DbExecutor::new(db_pool.clone())
     });
 
