@@ -6,6 +6,23 @@ use app::AppState;
 
 pub struct WSClient;
 
+impl WSClient {
+    pub fn handle_message(&mut self, text: &str, ctx: &mut <Self as Actor>::Context) {
+        if text.starts_with("+id|") {
+            ctx.state().gateway.do_send(gateway::SubscribeToId {
+                id: text[4..].to_owned(),
+                addr: ctx.address(),
+            });
+
+        } else if text.starts_with("-id|") {
+            ctx.state().gateway.do_send(gateway::UnsubscribeFromId {
+                id: text[4..].to_owned(),
+                addr: ctx.address(),
+            });
+        }
+    }
+}
+
 impl Default for WSClient {
     fn default() -> WSClient {
         WSClient
@@ -49,6 +66,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WSClient {
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Close(_) => ctx.stop(),
+            ws::Message::Text(text) => self.handle_message(&text, ctx),
             _ => {},
         }
     }

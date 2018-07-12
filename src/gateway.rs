@@ -1,6 +1,6 @@
 use chrono;
 use actix::prelude::*;
-use std::collections::HashSet;
+use std::collections::*;
 use std::time::Duration;
 
 use aprs;
@@ -16,6 +16,7 @@ use db::models::CreateOGNPosition;
 pub struct Gateway {
     db: Addr<DbExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
+    id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
 }
 
 impl Gateway {
@@ -23,6 +24,7 @@ impl Gateway {
         Gateway {
             db,
             ws_clients: HashSet::new(),
+            id_subscriptions: HashMap::new(),
         }
     }
 
@@ -79,6 +81,41 @@ impl Handler<Connect> for Gateway {
     }
 }
 
+#[derive(Message)]
+pub struct SubscribeToId {
+    pub id: String,
+    pub addr: Addr<WSClient>,
+}
+
+impl Handler<SubscribeToId> for Gateway {
+    type Result = ();
+
+    fn handle(&mut self, msg: SubscribeToId, _ctx: &mut Context<Self>) {
+        self.id_subscriptions.entry(msg.id)
+            .or_insert_with(|| Vec::new())
+            .push(msg.addr);
+    }
+}
+
+
+#[derive(Message)]
+pub struct UnsubscribeFromId {
+    pub id: String,
+    pub addr: Addr<WSClient>,
+}
+
+impl Handler<UnsubscribeFromId> for Gateway {
+    type Result = ();
+
+    fn handle(&mut self, msg: UnsubscribeFromId, _ctx: &mut Context<Self>) {
+        if let Some(subscribers) = self.id_subscriptions.get_mut(&msg.id) {
+            if let Some(pos) = subscribers.iter_mut().position(|x| *x == msg.addr) {
+                subscribers.remove(pos);
+            }
+        }
+    }
+}
+
 /// Websocket client has disconnected.
 #[derive(Message)]
 pub struct Disconnect {
@@ -89,6 +126,12 @@ impl Handler<Disconnect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
+        self.id_subscriptions.values_mut().for_each(|subscribers| {
+            if let Some(pos) = subscribers.iter().position(|x| *x == msg.addr) {
+                subscribers.remove(pos);
+            }
+        });
+
         self.ws_clients.remove(&msg.addr);
 
         debug!("Client disconnected ({} clients)", self.ws_clients.len());
@@ -114,11 +157,14 @@ impl Handler<OGNMessage> for Gateway {
             // log record to the console
             trace!("{}", ws_message);
 
-            // distribute record to all connected websocket clients
-            for addr in &self.ws_clients {
-                addr.do_send(SendText(ws_message.clone()));
+            // send record to subscribers
+            if let Some(subscribers) = self.id_subscriptions.get(position.id) {
+                for subscriber in subscribers {
+                    subscriber.do_send(SendText(ws_message.clone()));
+                }
             }
 
+            // save record in the database
             self.db.do_send(CreateOGNPosition {
                 ogn_id: position.id.to_owned(),
                 time,
