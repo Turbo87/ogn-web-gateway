@@ -45,7 +45,7 @@ use app::build_app;
 use db::DbExecutor;
 use gateway::Gateway;
 
-const DB_WORKERS: usize = 3;
+const DB_WORKERS: usize = 7;
 
 fn main() {
     // reads sentry DSN from `SENTRY_DSN` environment variable
