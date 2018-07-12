@@ -170,6 +170,7 @@ impl Handler<OGNMessage> for Gateway {
                 time,
                 longitude: position.longitude,
                 latitude: position.latitude,
+                altitude: position.altitude as i32,
             })
         }
     }

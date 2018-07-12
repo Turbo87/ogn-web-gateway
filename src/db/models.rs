@@ -9,6 +9,7 @@ pub struct OGNPosition {
     pub time: NaiveDateTime,
     pub longitude: f64,
     pub latitude: f64,
+    pub altitude: i32,
 }
 
 pub type CreateOGNPosition = OGNPosition;

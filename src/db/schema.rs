@@ -4,6 +4,7 @@ table! {
         time -> Timestamp,
         longitude -> Float8,
         latitude -> Float8,
+        altitude -> Int4,
     }
 }
 
