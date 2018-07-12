@@ -22,6 +22,8 @@ extern crate serde;
 
 extern crate systemstat;
 
+#[cfg(test)] #[macro_use] extern crate approx;
+
 use actix::*;
 use actix_web::server::HttpServer;
 use actix_ogn::OGNActor;
@@ -36,6 +38,7 @@ mod aprs;
 mod db;
 mod gateway;
 mod time;
+mod units;
 mod ws_client;
 
 use app::build_app;
