@@ -83,8 +83,6 @@ fn main() {
         .unwrap()
         .start();
 
-    info!("Started http server: 127.0.0.1:8080");
-
     sys.run();
 }
 
