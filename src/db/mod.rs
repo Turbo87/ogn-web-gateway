@@ -7,7 +7,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 pub mod models;
 pub mod schema;
 
-use db::models::CreateOGNPosition;
+use db::models::{OGNPosition, CreateOGNPosition};
 
 pub struct DbExecutor {
     pub pool: Pool<ConnectionManager<PgConnection>>,
@@ -83,6 +83,36 @@ impl Handler<CountOGNPositions> for DbExecutor {
             Err(error) => {
                 error!("Could not count OGN position records: {}", error);
                 None
+            },
+        }
+    }
+}
+
+pub struct ReadOGNPositions {
+    pub ogn_id: String,
+}
+
+impl Message for ReadOGNPositions {
+    type Result = Option<Vec<OGNPosition>>;
+}
+
+impl Handler<ReadOGNPositions> for DbExecutor {
+    type Result = Option<Vec<OGNPosition>>;
+
+    fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
+        use db::schema::ogn_positions::dsl::*;
+
+        let conn: &PgConnection = &self.pool.get().unwrap();
+
+        let result = ogn_positions
+            .filter(ogn_id.eq(&msg.ogn_id))
+            .load::<models::OGNPosition>(conn);
+
+        match result {
+            Ok(positions) => Some(positions),
+            Err(error) => {
+                error!("Could not read OGN position records: {}", error);
+                None // TODO this should return an error
             },
         }
     }
