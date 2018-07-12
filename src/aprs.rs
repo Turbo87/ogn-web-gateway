@@ -25,10 +25,10 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             (?P<time>\d{6})h           # time in HHMMSS incl. `h` indicator
             (?P<lat>\d{4}.\d{2})       # latitude angle in DDMM.mm
             (?P<lat_sign>[NS])         # latitude hemisphere
-            .                          # (irrelevant)
+            .                          # symbol table identifier
             (?P<lon>\d{5}.\d{2})       # longitude angle in DDDMM.mm
             (?P<lon_sign>[WE])         # longitude hemisphere
-            .                          # (irrelevant)
+            .                          # symbol code
             (?P<course>\d{3})          # course angle in DDD
             /                          # separator
             (?P<speed>\d{3})           # speed in knots
