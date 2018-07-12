@@ -1,5 +1,5 @@
 table! {
-    ogn_positions (time, ogn_id) {
+    ogn_positions (ogn_id, time) {
         ogn_id -> Text,
         time -> Timestamp,
         longitude -> Float8,
