@@ -15,14 +15,14 @@ use db::models::CreateOGNPosition;
 /// `OGNRecord` messages to them.
 pub struct Gateway {
     db: Addr<DbExecutor>,
-    sessions: HashSet<Addr<WSClient>>,
+    ws_clients: HashSet<Addr<WSClient>>,
 }
 
 impl Gateway {
     pub fn new(db: Addr<DbExecutor>) -> Gateway {
         Gateway {
             db,
-            sessions: HashSet::new(),
+            ws_clients: HashSet::new(),
         }
     }
 
@@ -57,7 +57,7 @@ impl Handler<RequestStatus> for Gateway {
 
     fn handle(&mut self, _msg: RequestStatus, _ctx: &mut Context<Self>) -> Self::Result {
         MessageResult(StatusResponse {
-            users: self.sessions.len()
+            users: self.ws_clients.len()
         })
     }
 }
@@ -72,10 +72,10 @@ impl Handler<Connect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) {
-        debug!("Client connected ({} clients)", self.sessions.len());
+        debug!("Client connected ({} clients)", self.ws_clients.len());
 
         // register session with random id
-        self.sessions.insert(msg.addr);
+        self.ws_clients.insert(msg.addr);
     }
 }
 
@@ -89,9 +89,9 @@ impl Handler<Disconnect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        self.sessions.remove(&msg.addr);
+        self.ws_clients.remove(&msg.addr);
 
-        debug!("Client disconnected ({} clients)", self.sessions.len());
+        debug!("Client disconnected ({} clients)", self.ws_clients.len());
     }
 }
 
@@ -115,7 +115,7 @@ impl Handler<OGNMessage> for Gateway {
             trace!("{}", ws_message);
 
             // distribute record to all connected websocket clients
-            for addr in &self.sessions {
+            for addr in &self.ws_clients {
                 addr.do_send(SendText(ws_message.clone()));
             }
 
