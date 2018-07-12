@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 use db::schema::ogn_positions;
 
@@ -6,7 +6,7 @@ use db::schema::ogn_positions;
 #[table_name="ogn_positions"]
 pub struct OGNPosition {
     pub ogn_id: String,
-    pub time: NaiveDateTime,
+    pub time: DateTime<Utc>,
     pub longitude: f64,
     pub latitude: f64,
     pub altitude: i32,

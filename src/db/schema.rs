@@ -1,7 +1,7 @@
 table! {
     ogn_positions (ogn_id, time) {
         ogn_id -> Text,
-        time -> Timestamp,
+        time -> Timestamptz,
         longitude -> Float8,
         latitude -> Float8,
         altitude -> Int4,

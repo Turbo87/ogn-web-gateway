@@ -166,7 +166,7 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         if let Some(position) = aprs::parse(&message.raw) {
-            let time = time_to_datetime(chrono::Utc::now().naive_utc(), position.time);
+            let time = time_to_datetime(chrono::Utc::now(), position.time);
 
             let ws_message = format!(
                 "{}|{}|{:.6}|{:.6}|{}",
