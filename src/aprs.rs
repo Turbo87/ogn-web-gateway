@@ -31,7 +31,7 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             .                          # (irrelevant)
             (?P<course>\d{3})          # course angle in DDD
             /                          # separator
-            (?P<speed>\d{3})           # speed in unknown units
+            (?P<speed>\d{3})           # speed in knots
             /                          # separator
             A=(?P<alt>\d{6})           # altitude in feet (converted to meters)
             .*                         # (irrelevant)
