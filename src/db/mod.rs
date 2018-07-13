@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use chrono::prelude::*;
 
 use diesel;
 use diesel::prelude::*;
@@ -103,6 +104,8 @@ impl Handler<CountOGNPositions> for DbExecutor {
 
 pub struct ReadOGNPositions {
     pub ogn_id: String,
+    pub after: Option<DateTime<Utc>>,
+    pub before: Option<DateTime<Utc>>,
 }
 
 impl Message for ReadOGNPositions {
@@ -117,9 +120,20 @@ impl Handler<ReadOGNPositions> for DbExecutor {
 
         let conn: &PgConnection = &self.pool.get().unwrap();
 
-        let result = ogn_positions
-            .filter(ogn_id.eq(&msg.ogn_id))
-            .load::<models::OGNPosition>(conn);
+        let query = {
+            let mut query = ogn_positions.filter(ogn_id.eq(&msg.ogn_id)).into_boxed();
+
+            match (msg.after, msg.before) {
+                (Some(after), Some(before)) => { query = query.filter(time.between(after, before)); }
+                (Some(after), None) => { query = query.filter(time.ge(after)); }
+                (None, Some(before)) => { query = query.filter(time.le(before)); }
+                _ => {},
+            }
+
+            query.order_by(time)
+        };
+
+        let result = query.load::<models::OGNPosition>(conn);
 
         match result {
             Ok(positions) => Some(positions),
