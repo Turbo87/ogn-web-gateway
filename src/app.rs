@@ -1,5 +1,5 @@
 use actix::*;
-use actix_web::{fs, http, App, HttpResponse};
+use actix_web::*;
 
 use db::DbExecutor;
 use gateway::Gateway;
@@ -12,15 +12,10 @@ pub struct AppState {
 
 pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> {
     App::with_state(AppState { db, gateway })
-        // redirect to websocket.html
-        .resource("/", |r| r.method(http::Method::GET).f(|_| {
-            HttpResponse::Found()
-                .header("LOCATION", "/static/websocket.html")
-                .finish()
-        }))
+        .route("/", http::Method::GET, |_: HttpRequest<_>| {
+            fs::NamedFile::open("static/websocket.html")
+        })
         .route("/api/status", http::Method::GET,  api::status::get)
         .route("/api/records/{id}", http::Method::GET, api::records::get)
         .route("/api/live", http::Method::GET, api::live::get)
-        // static resources
-        .handler("/static/", fs::StaticFiles::new("static/").unwrap())
 }
