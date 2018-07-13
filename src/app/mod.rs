@@ -1,10 +1,10 @@
 use actix::*;
-use actix_web::{fs, http, ws, App, HttpResponse, };
+use actix_web::{fs, http, App, HttpResponse};
 
 use db::DbExecutor;
 use gateway::Gateway;
-use ws_client::WSClient;
 
+mod live;
 mod positions;
 mod status;
 
@@ -23,7 +23,7 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
         }))
         .resource("/api/status", |r| r.method(http::Method::GET).with(status::status))
         .route("/api/{id}/positions", http::Method::GET, positions::positions)
-        .route("/ws/", http::Method::GET, |req| ws::start(&req, WSClient::default()))
+        .route("/ws/", http::Method::GET, live::live)
         // static resources
         .handler("/static/", fs::StaticFiles::new("static/").unwrap())
 }
