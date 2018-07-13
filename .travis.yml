@@ -1,3 +1,7 @@
+branches:
+  except:
+  - /^dependabot\/.*$/
+
 language: rust
 rust:
   - 1.26.0
