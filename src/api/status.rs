@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, Responder, Json, AsyncResponder, Error};
+use actix_web::*;
 use futures::future::Future;
 
 use systemstat::{self, Platform};
@@ -14,10 +14,10 @@ struct Status {
     positions: Option<i64>,
 }
 
-pub fn get(req: HttpRequest<AppState>) -> impl Responder {
+pub fn get(state: State<AppState>) -> impl Responder {
     Future::join(
-        req.state().gateway.send(gateway::RequestStatus).from_err::<Error>(),
-        req.state().db.send(db::CountOGNPositions).from_err::<Error>()
+        state.gateway.send(gateway::RequestStatus).from_err::<Error>(),
+        state.db.send(db::CountOGNPositions).from_err::<Error>()
     ).and_then(|(gateway_status, position_count)| {
         let sys = systemstat::System::new();
 
