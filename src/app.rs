@@ -18,7 +18,7 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
                 .header("LOCATION", "/static/websocket.html")
                 .finish()
         }))
-        .resource("/api/status", |r| r.method(http::Method::GET).with(api::status::get))
+        .route("/api/status", http::Method::GET,  api::status::get)
         .route("/api/{id}/positions", http::Method::GET, api::positions::get)
         .route("/api/live", http::Method::GET, api::live::get)
         // static resources
