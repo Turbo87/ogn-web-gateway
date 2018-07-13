@@ -104,6 +104,28 @@ impl Handler<Connect> for Gateway {
     }
 }
 
+/// Websocket client has disconnected.
+#[derive(Message)]
+pub struct Disconnect {
+    pub addr: Addr<WSClient>,
+}
+
+impl Handler<Disconnect> for Gateway {
+    type Result = ();
+
+    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
+        self.id_subscriptions.values_mut().for_each(|subscribers| {
+            if let Some(pos) = subscribers.iter().position(|x| *x == msg.addr) {
+                subscribers.remove(pos);
+            }
+        });
+
+        self.ws_clients.remove(&msg.addr);
+
+        debug!("Client disconnected ({} clients)", self.ws_clients.len());
+    }
+}
+
 #[derive(Message)]
 pub struct SubscribeToId {
     pub id: String,
@@ -136,28 +158,6 @@ impl Handler<UnsubscribeFromId> for Gateway {
                 subscribers.remove(pos);
             }
         }
-    }
-}
-
-/// Websocket client has disconnected.
-#[derive(Message)]
-pub struct Disconnect {
-    pub addr: Addr<WSClient>,
-}
-
-impl Handler<Disconnect> for Gateway {
-    type Result = ();
-
-    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        self.id_subscriptions.values_mut().for_each(|subscribers| {
-            if let Some(pos) = subscribers.iter().position(|x| *x == msg.addr) {
-                subscribers.remove(pos);
-            }
-        });
-
-        self.ws_clients.remove(&msg.addr);
-
-        debug!("Client disconnected ({} clients)", self.ws_clients.len());
     }
 }
 
