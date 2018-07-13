@@ -3,10 +3,7 @@ use actix_web::{fs, http, App, HttpResponse};
 
 use db::DbExecutor;
 use gateway::Gateway;
-
-mod live;
-mod positions;
-mod status;
+use ::api;
 
 pub struct AppState {
     pub db: Addr<DbExecutor>,
@@ -21,9 +18,9 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
                 .header("LOCATION", "/static/websocket.html")
                 .finish()
         }))
-        .resource("/api/status", |r| r.method(http::Method::GET).with(status::status))
-        .route("/api/{id}/positions", http::Method::GET, positions::positions)
-        .route("/api/live", http::Method::GET, live::live)
+        .resource("/api/status", |r| r.method(http::Method::GET).with(api::status))
+        .route("/api/{id}/positions", http::Method::GET, api::positions)
+        .route("/api/live", http::Method::GET, api::live)
         // static resources
         .handler("/static/", fs::StaticFiles::new("static/").unwrap())
 }

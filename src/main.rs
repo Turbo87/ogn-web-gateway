@@ -33,6 +33,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 
 use std::env;
 
+mod api;
 mod app;
 mod aprs;
 mod db;
