@@ -27,7 +27,7 @@
 
       function connect() {
         disconnect();
-        var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
+        var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://') + window.location.host + '/api/live';
         conn = new WebSocket(wsUri);
         log('Connecting...');
         conn.onopen = function() {

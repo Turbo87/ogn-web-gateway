@@ -23,7 +23,7 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
         }))
         .resource("/api/status", |r| r.method(http::Method::GET).with(status::status))
         .route("/api/{id}/positions", http::Method::GET, positions::positions)
-        .route("/ws/", http::Method::GET, live::live)
+        .route("/api/live", http::Method::GET, live::live)
         // static resources
         .handler("/static/", fs::StaticFiles::new("static/").unwrap())
 }
