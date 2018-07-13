@@ -83,8 +83,8 @@ mod tests {
         let position = result.unwrap();
         assert_eq!(position.id, "06DD9612");
         assert_eq!(position.time, "14:19:56".parse().unwrap());
-        assert_relative_eq!(position.latitude, 49.186333333333333);
-        assert_relative_eq!(position.longitude, 8.2655);
+        assert_relative_eq!(position.latitude, 49. + 11.18 / 60.);
+        assert_relative_eq!(position.longitude, 8. + 15.93 / 60.);
         assert_relative_eq!(position.altitude, 1132.6368);
         assert_eq!(position.course, 126);
     }
@@ -97,8 +97,8 @@ mod tests {
         let position = result.unwrap();
         assert_eq!(position.id, "214060D7");
         assert_eq!(position.time, "14:19:53".parse().unwrap());
-        assert_relative_eq!(position.latitude, 51.783833333333334);
-        assert_relative_eq!(position.longitude, -1.15);
+        assert_relative_eq!(position.latitude, 51. + 47.03 / 60.);
+        assert_relative_eq!(position.longitude, -(1. + 9.00 / 60.));
         assert_relative_eq!(position.altitude, 1037.844);
         assert_eq!(position.course, 210);
     }
@@ -111,8 +111,8 @@ mod tests {
         let position = result.unwrap();
         assert_eq!(position.id, "06DD87AC");
         assert_eq!(position.time, "14:19:50".parse().unwrap());
-        assert_relative_eq!(position.latitude, 48.3055);
-        assert_relative_eq!(position.longitude, 4.031166666666667);
+        assert_relative_eq!(position.latitude, 48. + 18.33 / 60.);
+        assert_relative_eq!(position.longitude, 4. + 1.87 / 60.);
         assert_relative_eq!(position.altitude, 1584.6552);
         assert_eq!(position.course, 14);
     }
