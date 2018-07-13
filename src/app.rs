@@ -1,5 +1,6 @@
 use actix::*;
 use actix_web::*;
+use actix_web::middleware::Logger;
 
 use db::DbExecutor;
 use gateway::Gateway;
@@ -12,6 +13,7 @@ pub struct AppState {
 
 pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> {
     App::with_state(AppState { db, gateway })
+        .middleware(Logger::default())
         .route("/", http::Method::GET, |_: HttpRequest<_>| {
             fs::NamedFile::open("static/websocket.html")
         })
