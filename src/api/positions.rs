@@ -4,7 +4,7 @@ use futures::Future;
 use ::app::AppState;
 use ::db;
 
-pub fn positions(req: HttpRequest<AppState>) -> impl Responder {
+pub fn get(req: HttpRequest<AppState>) -> impl Responder {
     let ogn_id = req.match_info().get("id").unwrap().to_owned();
 
     req.state().db.send(db::ReadOGNPositions { ogn_id }).from_err::<Error>()

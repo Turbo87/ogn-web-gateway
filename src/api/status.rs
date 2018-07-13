@@ -14,7 +14,7 @@ struct Status {
     positions: Option<i64>,
 }
 
-pub fn status(req: HttpRequest<AppState>) -> impl Responder {
+pub fn get(req: HttpRequest<AppState>) -> impl Responder {
     Future::join(
         req.state().gateway.send(gateway::RequestStatus).from_err::<Error>(),
         req.state().db.send(db::CountOGNPositions).from_err::<Error>()
