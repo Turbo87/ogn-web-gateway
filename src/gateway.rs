@@ -166,7 +166,14 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         if let Some(position) = aprs::parse(&message.raw) {
-            let time = time_to_datetime(chrono::Utc::now(), position.time);
+            let now = chrono::Utc::now();
+            let time = time_to_datetime(now, position.time);
+            let age = time - now;
+
+            // throw away records older than 15min or more than 5min into the future
+            if age.num_minutes() > 15 || age.num_minutes() < -5 {
+                return;
+            }
 
             let ws_message = format!(
                 "{}|{}|{:.6}|{:.6}|{}",
