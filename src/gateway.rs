@@ -175,20 +175,23 @@ impl Handler<OGNMessage> for Gateway {
                 return;
             }
 
-            let ws_message = format!(
-                "{}|{}|{:.6}|{:.6}|{}",
-                position.id,
-                time.timestamp(),
-                position.longitude,
-                position.latitude,
-                position.course,
-            );
-
-            // log record to the console
-            trace!("{}", ws_message);
-
             // send record to subscribers
-            if let Some(subscribers) = self.id_subscriptions.get(position.id) {
+            let mut subscribers = Vec::<&Addr<WSClient>>::new();
+
+            if let Some(id_subscribers) = self.id_subscriptions.get(position.id) {
+                subscribers.extend(id_subscribers);
+            }
+
+            if !subscribers.is_empty() {
+                let ws_message = format!(
+                    "{}|{}|{:.6}|{:.6}|{}",
+                    position.id,
+                    time.timestamp(),
+                    position.longitude,
+                    position.latitude,
+                    position.course,
+                );
+
                 for subscriber in subscribers {
                     subscriber.do_send(SendText(ws_message.clone()));
                 }
