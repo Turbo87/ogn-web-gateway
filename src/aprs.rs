@@ -20,7 +20,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
 
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"(?x)
-            [^:]:                      # header incl. separator
+            (?P<id>[A-Z]{3}[\dA-F]{6}) # sender ID
+            [^:]+:                     # header incl. separator
             /                          # position report indicator
             (?P<time>\d{6})h           # time in HHMMSS incl. `h` indicator
             (?P<lat>\d{4}.\d{2})       # latitude angle in DDMM.mm
@@ -35,8 +36,6 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             /                          # separator
             A=(?P<alt>\d{6})           # altitude in feet (converted to meters)
             (?:\x20!W(?P<ppe>\d\d)!)?  # position precision enhancement
-            .*                         # (irrelevant)
-            \x20id(?P<id>[\dA-F]{8})   # OGN device ID
         "#).unwrap();
     }
 
@@ -92,7 +91,7 @@ mod tests {
         assert!(result.is_some());
 
         let position = result.unwrap();
-        assert_eq!(position.id, "06DD9612");
+        assert_eq!(position.id, "FLRDD9612");
         assert_eq!(position.time, "14:19:56".parse().unwrap());
         assert_relative_eq!(position.latitude, 49. + 11.187 / 60.);
         assert_relative_eq!(position.longitude, 8. + 15.935 / 60.);
@@ -106,7 +105,7 @@ mod tests {
         assert!(result.is_some());
 
         let position = result.unwrap();
-        assert_eq!(position.id, "214060D7");
+        assert_eq!(position.id, "ICA4060D7");
         assert_eq!(position.time, "14:19:53".parse().unwrap());
         assert_relative_eq!(position.latitude, 51. + 47.035 / 60.);
         assert_relative_eq!(position.longitude, -(1. + 9.000 / 60.));
@@ -120,7 +119,7 @@ mod tests {
         assert!(result.is_some());
 
         let position = result.unwrap();
-        assert_eq!(position.id, "06DD87AC");
+        assert_eq!(position.id, "FLRDD87AC");
         assert_eq!(position.time, "14:19:50".parse().unwrap());
         assert_relative_eq!(position.latitude, 48. + 18.33 / 60.);
         assert_relative_eq!(position.longitude, 4. + 1.87 / 60.);
