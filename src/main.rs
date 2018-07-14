@@ -38,6 +38,7 @@ mod app;
 mod aprs;
 mod db;
 mod gateway;
+mod geo;
 mod time;
 mod units;
 mod ws_client;

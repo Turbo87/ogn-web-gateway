@@ -3,6 +3,7 @@ use actix_web::ws;
 
 use gateway;
 use app::AppState;
+use geo::BoundingBox;
 
 pub struct WSClient;
 
@@ -19,6 +20,13 @@ impl WSClient {
                 id: text[4..].to_owned(),
                 addr: ctx.address(),
             });
+        } else if text.starts_with("bbox|") {
+            if let Some(bbox) = BoundingBox::try_parse(&text[5..]) {
+                ctx.state().gateway.do_send(gateway::SetBoundingBox {
+                    addr: ctx.address(),
+                    bbox,
+                });
+            }
         }
     }
 }

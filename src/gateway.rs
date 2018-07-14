@@ -6,6 +6,7 @@ use std::time::Duration;
 use aprs;
 use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
+use geo::BoundingBox;
 use time::time_to_datetime;
 
 use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
@@ -17,6 +18,7 @@ pub struct Gateway {
     db: Addr<DbExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
+    bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
     db_buffer: Vec<OGNPosition>,
 }
 
@@ -26,6 +28,7 @@ impl Gateway {
             db,
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
+            bbox_subscriptions: HashMap::new(),
             db_buffer: Vec::new(),
         }
     }
@@ -161,6 +164,22 @@ impl Handler<UnsubscribeFromId> for Gateway {
     }
 }
 
+
+#[derive(Message)]
+pub struct SetBoundingBox {
+    pub addr: Addr<WSClient>,
+    pub bbox: BoundingBox,
+}
+
+impl Handler<SetBoundingBox> for Gateway {
+    type Result = ();
+
+    fn handle(&mut self, msg: SetBoundingBox, _ctx: &mut Context<Self>) {
+        self.bbox_subscriptions.insert(msg.addr, msg.bbox);
+    }
+}
+
+
 impl Handler<OGNMessage> for Gateway {
     type Result = ();
 
@@ -176,7 +195,10 @@ impl Handler<OGNMessage> for Gateway {
             }
 
             // send record to subscribers
-            let mut subscribers = Vec::<&Addr<WSClient>>::new();
+            let mut subscribers: Vec<&Addr<WSClient>> = self.bbox_subscriptions.iter()
+                .filter(|(_, bbox)| bbox.contains(position.longitude, position.latitude))
+                .map(|(addr, _)| addr)
+                .collect();
 
             if let Some(id_subscribers) = self.id_subscriptions.get(position.id) {
                 subscribers.extend(id_subscribers);
