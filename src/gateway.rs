@@ -206,12 +206,13 @@ impl Handler<OGNMessage> for Gateway {
 
             if !subscribers.is_empty() {
                 let ws_message = format!(
-                    "{}|{}|{:.6}|{:.6}|{}",
+                    "{}|{}|{:.6}|{:.6}|{}|{}",
                     position.id,
                     time.timestamp(),
                     position.longitude,
                     position.latitude,
                     position.course,
+                    position.altitude as i32,
                 );
 
                 for subscriber in subscribers {
