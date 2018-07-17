@@ -39,6 +39,7 @@ mod aprs;
 mod db;
 mod gateway;
 mod geo;
+mod ogn_ddb;
 mod time;
 mod units;
 mod ws_client;
@@ -46,6 +47,7 @@ mod ws_client;
 use app::build_app;
 use db::DbExecutor;
 use gateway::Gateway;
+use ogn_ddb::OGNDevicesUpdater;
 
 const DB_WORKERS: usize = 7;
 
@@ -70,6 +72,9 @@ fn main() {
     let db_executor_addr = SyncArbiter::start(DB_WORKERS, move || {
         DbExecutor::new(db_pool.clone())
     });
+
+    let updater_db_addr = db_executor_addr.clone();
+    let _ogn_device_updater_addr = Arbiter::start(|_| OGNDevicesUpdater { db: updater_db_addr });
 
     // Start "gateway" actor in separate thread
     let gateway_db_addr = db_executor_addr.clone();

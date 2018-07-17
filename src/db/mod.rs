@@ -144,3 +144,35 @@ impl Handler<ReadOGNPositions> for DbExecutor {
         }
     }
 }
+
+#[derive(Message)]
+pub struct UpsertOGNDevices {
+    pub devices: Vec<OGNDevice>,
+}
+
+impl Handler<UpsertOGNDevices> for DbExecutor {
+    type Result = ();
+
+    fn handle(&mut self, msg: UpsertOGNDevices, _ctx: &mut Self::Context) -> () {
+        use diesel::pg::upsert::excluded;
+        use db::schema::ogn_devices::dsl::*;
+
+        let conn: &PgConnection = &self.pool.get().unwrap();
+
+        let result = diesel::insert_into(ogn_devices)
+            .values(&msg.devices)
+            .on_conflict(ogn_id)
+            .do_update()
+            .set((
+                model.eq(excluded(model)),
+                category.eq(excluded(category)),
+                registration.eq(excluded(registration)),
+                callsign.eq(excluded(callsign)),
+            ))
+            .execute(conn);
+
+        if let Err(error) = result {
+            error!("Could not update OGN device records: {}", error);
+        }
+    }
+}
