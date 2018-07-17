@@ -28,4 +28,4 @@ diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] }
 systemstat = { git = "https://github.com/myfreeweb/systemstat" }
 
 [dev-dependencies]
-approx = "0.2.0"
+approx = "0.3.0"
