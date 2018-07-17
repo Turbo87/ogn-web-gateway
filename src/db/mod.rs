@@ -176,3 +176,31 @@ impl Handler<UpsertOGNDevices> for DbExecutor {
         }
     }
 }
+
+pub struct ReadOGNDevices;
+
+impl Message for ReadOGNDevices {
+    type Result = Option<Vec<OGNDevice>>;
+}
+
+impl Handler<ReadOGNDevices> for DbExecutor {
+    type Result = Option<Vec<OGNDevice>>;
+
+    fn handle(&mut self, _msg: ReadOGNDevices, _ctx: &mut Self::Context) -> Self::Result {
+        use db::schema::ogn_devices::dsl::*;
+
+        let conn: &PgConnection = &self.pool.get().unwrap();
+
+        let result = ogn_devices
+            .order_by(ogn_id)
+            .load::<OGNDevice>(conn);
+
+        match result {
+            Ok(devices) => Some(devices),
+            Err(error) => {
+                error!("Could not read OGN device records: {}", error);
+                None // TODO this should return an error
+            },
+        }
+    }
+}
