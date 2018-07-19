@@ -13,3 +13,9 @@ matrix:
   fast_finish: true
   allow_failures:
     - rust: nightly
+
+cache: cargo
+
+script:
+  - cargo build
+  - cargo test
