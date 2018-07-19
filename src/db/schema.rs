@@ -1,4 +1,14 @@
 table! {
+    ogn_devices (ogn_id) {
+        ogn_id -> Text,
+        model -> Nullable<Text>,
+        category -> Int2,
+        registration -> Nullable<Text>,
+        callsign -> Nullable<Text>,
+    }
+}
+
+table! {
     ogn_positions (ogn_id, time) {
         ogn_id -> Text,
         time -> Timestamptz,
@@ -19,6 +29,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    ogn_devices,
     ogn_positions,
     spatial_ref_sys,
 );

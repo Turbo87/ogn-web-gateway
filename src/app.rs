@@ -17,6 +17,7 @@ pub fn build_app(db: Addr<DbExecutor>, gateway: Addr<Gateway>) -> App<AppState> 
         .route("/", http::Method::GET, |_: HttpRequest<_>| {
             fs::NamedFile::open("static/websocket.html")
         })
+        .route("/api/ddb", http::Method::GET,  api::ddb::get)
         .route("/api/status", http::Method::GET,  api::status::get)
         .route("/api/records/{id}", http::Method::GET, api::records::get)
         .route("/api/live", http::Method::GET, api::live::get)
