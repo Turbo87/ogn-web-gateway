@@ -25,7 +25,7 @@ serde_derive = "1.0.70"
 
 diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] }
 
-systemstat = { git = "https://github.com/myfreeweb/systemstat" }
+systemstat = "0.1.3"
 
 [dev-dependencies]
 approx = "0.3.0"
