@@ -1,3 +1,6 @@
+use std::vec::Vec;
+use std::time::Duration;
+
 use actix::*;
 use actix_web::ws;
 
@@ -5,7 +8,9 @@ use gateway;
 use app::AppState;
 use geo::BoundingBox;
 
-pub struct WSClient;
+pub struct WSClient {
+    buffer: Vec<String>,
+}
 
 impl WSClient {
     pub fn handle_message(&mut self, text: &str, ctx: &mut <Self as Actor>::Context) {
@@ -29,11 +34,21 @@ impl WSClient {
             }
         }
     }
+
+    pub fn flush(&mut self, ctx: &mut <Self as Actor>::Context) {
+        let buffer = self.buffer.split_off(0);
+
+        let count = buffer.len();
+        if count > 0 {
+            let text = buffer.join("\n");
+            ctx.text(text);
+        }
+    }
 }
 
 impl Default for WSClient {
     fn default() -> WSClient {
-        WSClient
+        WSClient { buffer: Vec::new() }
     }
 }
 
@@ -44,6 +59,10 @@ impl Actor for WSClient {
         // register self in gateway.
         let addr: Addr<_> = ctx.address();
         ctx.state().gateway.do_send(gateway::Connect { addr });
+
+        ctx.run_interval(Duration::from_millis(250), |act, ctx| {
+            act.flush(ctx);
+        });
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
@@ -61,8 +80,8 @@ pub struct SendText(pub String);
 impl Handler<SendText> for WSClient {
     type Result = ();
 
-    fn handle(&mut self, message: SendText, ctx: &mut Self::Context) {
-        ctx.text(message.0);
+    fn handle(&mut self, message: SendText, _ctx: &mut Self::Context) {
+        self.buffer.push(message.0);
     }
 }
 
