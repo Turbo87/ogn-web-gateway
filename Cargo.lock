@@ -42,7 +42,7 @@ dependencies = [
 [[package]]
 name = "actix-web"
 version = "0.7.0"
-source = "git+https://github.com/actix/actix-web#7d753eeb8c5744dd2f6c0e647c1a73b34a7022dd"
+source = "git+https://github.com/actix/actix-web#0925a7691ab9df8e6f1ae56ded68bc55514be5b0"
 dependencies = [
  "actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
