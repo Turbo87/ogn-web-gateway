@@ -7,7 +7,7 @@ ogn-web-gateway
 
 [OpenGliderNet]: http://wiki.glidernet.org/
 
-This project contains a webserver that connects to the [OpenGliderNetwork],
+This project contains a webserver that connects to the [OpenGliderNet],
 records the received records to a database for 24 hours and relays all data to
 the connected WebSocket clients.
 
