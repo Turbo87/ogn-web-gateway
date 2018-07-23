@@ -1,6 +1,6 @@
 [[package]]
 name = "actix"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "actix_derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -31,7 +31,7 @@ name = "actix-ogn"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "backoff 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-codec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -44,7 +44,7 @@ name = "actix-web"
 version = "0.7.0"
 source = "git+https://github.com/actix/actix-web#7d753eeb8c5744dd2f6c0e647c1a73b34a7022dd"
 dependencies = [
- "actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "brotli2 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1040,7 +1040,7 @@ dependencies = [
 name = "ogn-web-gateway"
 version = "0.1.0"
 dependencies = [
- "actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-ogn 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-web 0.7.0 (git+https://github.com/actix/actix-web)",
  "approx 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2159,7 +2159,7 @@ dependencies = [
 ]
 
 [metadata]
-"checksum actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "611e5db7b5907b570e75b70f5943dcb99e709a6815348238501e1b4696b30489"
+"checksum actix 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "28b4c697e6e63280f874c1d3e30c476de1cc589efd91b32b748a17808cb4adc3"
 "checksum actix-ogn 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b517586be9aac0581d887dbface993904fbbf8e1ce334b4996a9921cfcaf8fad"
 "checksum actix-web 0.7.0 (git+https://github.com/actix/actix-web)" = "<none>"
 "checksum actix_derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c4b1dc922654b9aca7a8a31eab875fde804fa9fbd67f220f2e457787b23590f2"
