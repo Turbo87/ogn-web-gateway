@@ -9,8 +9,8 @@ pretty_env_logger = "0.2"
 
 rand = "*"
 
-actix = "0.7"
-actix-web = { git = "https://github.com/actix/actix-web" }
+actix = "0.7.2"
+actix-web = "0.7.1"
 actix-ogn = "0.2"
 futures = "0.1"
 
