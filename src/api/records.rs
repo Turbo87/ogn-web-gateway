@@ -26,10 +26,11 @@ pub fn get((id, query, state): (Path<String>, Query<GetQueryParams>, State<AppSt
         .and_then(|res: Option<Vec<db::models::OGNPosition>>| {
             let ogn_id_positions: Vec<String> = res.unwrap_or_else(|| Vec::new()).iter()
                 .map(|pos| format!(
-                    "{}|{:.6}|{:.6}",
+                    "{}|{:.6}|{:.6}|{}",
                     pos.time.timestamp(),
                     pos.longitude,
                     pos.latitude,
+                    pos.altitude,
                 ))
                 .collect();
 
