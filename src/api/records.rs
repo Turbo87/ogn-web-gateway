@@ -20,7 +20,7 @@ pub fn get((id, query, state): (Path<String>, Query<GetQueryParams>, State<AppSt
         .and_then(|it| NaiveDateTime::from_timestamp_opt(it, 0))
         .map(|it| DateTime::from_utc(it, Utc));
 
-    let db_request = db::ReadOGNPositions { ogn_id: id.to_owned(), after, before };
+    let db_request = db::ReadOGNPositions { ids: vec![id.to_owned()], after, before };
 
     state.db.send(db_request).from_err::<Error>()
         .and_then(|res: Option<Vec<db::models::OGNPosition>>| {

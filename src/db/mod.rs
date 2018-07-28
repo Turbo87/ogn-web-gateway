@@ -1,3 +1,5 @@
+use std::vec::Vec;
+
 use actix::prelude::*;
 use chrono::prelude::*;
 
@@ -103,7 +105,7 @@ impl Handler<CountOGNPositions> for DbExecutor {
 }
 
 pub struct ReadOGNPositions {
-    pub ogn_id: String,
+    pub ids: Vec<String>,
     pub after: Option<DateTime<Utc>>,
     pub before: Option<DateTime<Utc>>,
 }
@@ -116,12 +118,13 @@ impl Handler<ReadOGNPositions> for DbExecutor {
     type Result = Option<Vec<OGNPosition>>;
 
     fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
+        use diesel::dsl::*;
         use db::schema::ogn_positions::dsl::*;
 
         let conn: &PgConnection = &self.pool.get().unwrap();
 
         let query = {
-            let mut query = ogn_positions.filter(ogn_id.eq(&msg.ogn_id)).into_boxed();
+            let mut query = ogn_positions.filter(ogn_id.eq(any(&msg.ids))).into_boxed();
 
             match (msg.after, msg.before) {
                 (Some(after), Some(before)) => { query = query.filter(time.between(after, before)); }
