@@ -14,7 +14,7 @@ actix-web = { version = "0.7.1", features = ["default", "alpn"] }
 actix-ogn = "0.2"
 futures = "0.1"
 
-chrono = "0.4.4"
+chrono = "0.4.5"
 regex = "1"
 lazy_static = "1.0.2"
 
