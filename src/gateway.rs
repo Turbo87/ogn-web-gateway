@@ -8,7 +8,7 @@ use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use geo::BoundingBox;
 use time::time_to_datetime;
-use redis::RedisExecutor;
+use redis::{self, RedisExecutor};
 
 use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
 use db::models::OGNPosition;
@@ -22,6 +22,7 @@ pub struct Gateway {
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
     db_buffer: Vec<OGNPosition>,
+    redis_buffer: Vec<OGNPosition>,
 }
 
 impl Gateway {
@@ -33,6 +34,7 @@ impl Gateway {
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
             db_buffer: Vec::new(),
+            redis_buffer: Vec::new(),
         }
     }
 
@@ -53,6 +55,20 @@ impl Gateway {
                 }
                 Err(error) => {
                     error!("Could not flush new OGN position records to the database: {}", error);
+                }
+            }
+        }
+
+        let buffer = self.redis_buffer.split_off(0);
+
+        let count = buffer.len();
+        if count > 0 {
+            match self.redis.try_send(redis::AddOGNPositions { positions: buffer }) {
+                Ok(_) => {
+                    debug!("Flushed {} OGN position records to redis", count);
+                }
+                Err(error) => {
+                    error!("Could not flush new OGN position records to redis: {}", error);
                 }
             }
         }
@@ -226,6 +242,15 @@ impl Handler<OGNMessage> for Gateway {
 
             // save record in the database
             self.db_buffer.push(OGNPosition {
+                ogn_id: position.id.to_owned(),
+                time,
+                longitude: position.longitude,
+                latitude: position.latitude,
+                altitude: position.altitude as i32,
+            });
+
+            // save record in the database
+            self.redis_buffer.push(OGNPosition {
                 ogn_id: position.id.to_owned(),
                 time,
                 longitude: position.longitude,
