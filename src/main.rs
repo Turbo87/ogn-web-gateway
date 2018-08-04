@@ -98,7 +98,8 @@ fn main() {
 
     // Start "gateway" actor in separate thread
     let gateway_db_addr = db_executor_addr.clone();
-    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new(gateway_db_addr));
+    let gateway_redis_addr = redis_executor_addr.clone();
+    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new(gateway_db_addr, gateway_redis_addr));
 
     // Start OGN client in separate thread
     let gw = gateway.clone();

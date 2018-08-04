@@ -8,6 +8,7 @@ use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use geo::BoundingBox;
 use time::time_to_datetime;
+use redis::RedisExecutor;
 
 use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
 use db::models::OGNPosition;
@@ -16,6 +17,7 @@ use db::models::OGNPosition;
 /// `OGNRecord` messages to them.
 pub struct Gateway {
     db: Addr<DbExecutor>,
+    redis: Addr<RedisExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
@@ -23,9 +25,10 @@ pub struct Gateway {
 }
 
 impl Gateway {
-    pub fn new(db: Addr<DbExecutor>) -> Gateway {
+    pub fn new(db: Addr<DbExecutor>, redis: Addr<RedisExecutor>) -> Gateway {
         Gateway {
             db,
+            redis,
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
