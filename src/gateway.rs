@@ -35,22 +35,25 @@ impl Gateway {
 
     fn schedule_db_flush(ctx: &mut Context<Self>) {
         ctx.run_later(Duration::from_secs(5), |act, ctx| {
-            let buffer = act.db_buffer.split_off(0);
-
-            let count = buffer.len();
-            if count > 0 {
-                match act.db.try_send(CreateOGNPositions { positions: buffer }) {
-                    Ok(_) => {
-                        debug!("Flushed {} OGN position records to the database", count);
-                    }
-                    Err(error) => {
-                        error!("Could not flush new OGN position records to the database: {}", error);
-                    }
-                }
-            }
-
+            act.flush_records();
             Self::schedule_db_flush(ctx);
         });
+    }
+
+    fn flush_records(&mut self) {
+        let buffer = self.db_buffer.split_off(0);
+
+        let count = buffer.len();
+        if count > 0 {
+            match self.db.try_send(CreateOGNPositions { positions: buffer }) {
+                Ok(_) => {
+                    debug!("Flushed {} OGN position records to the database", count);
+                }
+                Err(error) => {
+                    error!("Could not flush new OGN position records to the database: {}", error);
+                }
+            }
+        }
     }
 
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
