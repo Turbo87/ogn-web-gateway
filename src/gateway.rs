@@ -34,9 +34,8 @@ impl Gateway {
     }
 
     fn schedule_db_flush(ctx: &mut Context<Self>) {
-        ctx.run_later(Duration::from_secs(5), |act, ctx| {
+        ctx.run_interval(Duration::from_secs(5), |act, _ctx| {
             act.flush_records();
-            Self::schedule_db_flush(ctx);
         });
     }
 
@@ -57,9 +56,8 @@ impl Gateway {
     }
 
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
-        ctx.run_later(Duration::from_secs(30 * 60), |act, ctx| {
+        ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
             act.db.do_send(DropOldOGNPositions);
-            Self::schedule_db_cleanup(ctx);
         });
     }
 }
