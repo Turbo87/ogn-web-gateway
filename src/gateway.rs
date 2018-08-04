@@ -77,6 +77,7 @@ impl Gateway {
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
         ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
             act.db.do_send(DropOldOGNPositions);
+            act.redis.do_send(redis::DropOldOGNPositions);
         });
     }
 }
