@@ -9,8 +9,10 @@ extern crate actix_web;
 extern crate actix_ogn;
 extern crate futures;
 
-#[macro_use]
-extern crate diesel;
+extern crate r2d2;
+extern crate r2d2_redis;
+extern crate redis as _redis;
+#[macro_use] extern crate diesel;
 extern crate chrono;
 extern crate regex;
 #[macro_use] extern crate lazy_static;
@@ -30,6 +32,7 @@ use actix_ogn::OGNActor;
 
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use r2d2_redis::RedisConnectionManager;
 
 use std::env;
 
@@ -40,6 +43,7 @@ mod db;
 mod gateway;
 mod geo;
 mod ogn_ddb;
+mod redis;
 mod time;
 mod units;
 mod ws_client;
@@ -48,8 +52,10 @@ use app::build_app;
 use db::DbExecutor;
 use gateway::Gateway;
 use ogn_ddb::OGNDevicesUpdater;
+use redis::RedisExecutor;
 
 const DB_WORKERS: usize = 7;
+const REDIS_WORKERS: usize = 7;
 
 fn main() {
     // reads sentry DSN from `SENTRY_DSN` environment variable
@@ -60,6 +66,9 @@ fn main() {
 
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
+
+    let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_url = _redis::parse_redis_url(&redis_url).unwrap();
 
     let sys = actix::System::new("ogn-web-gateway");
 
@@ -72,6 +81,17 @@ fn main() {
     let db_executor_addr = SyncArbiter::start(DB_WORKERS, move || {
         DbExecutor::new(db_pool.clone())
     });
+
+
+    let redis_connection_manager = RedisConnectionManager::new(redis_url).unwrap();
+    let redis_pool = r2d2::Pool::builder()
+        .build(redis_connection_manager)
+        .unwrap();
+
+    let redis_executor_addr = SyncArbiter::start(REDIS_WORKERS, move || {
+        RedisExecutor::new(redis_pool.clone())
+    });
+
 
     let updater_db_addr = db_executor_addr.clone();
     let _ogn_device_updater_addr = Arbiter::start(|_| OGNDevicesUpdater { db: updater_db_addr });
