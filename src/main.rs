@@ -106,7 +106,7 @@ fn main() {
     let _ogn_addr: Addr<_> = Supervisor::start(|_| OGNActor::new(gw.recipient()));
 
     // Create Http server with websocket support
-    HttpServer::new(move || build_app(db_executor_addr.clone(), gateway.clone()))
+    HttpServer::new(move || build_app(db_executor_addr.clone(), redis_executor_addr.clone(), gateway.clone()))
         .bind("127.0.0.1:8080")
         .unwrap()
         .start();

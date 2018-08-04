@@ -48,3 +48,29 @@ impl Handler<AddOGNPositions> for RedisExecutor {
         }
     }
 }
+
+pub struct CountOGNPositions;
+
+impl Message for CountOGNPositions {
+    type Result = Option<u64>;
+}
+
+impl Handler<CountOGNPositions> for RedisExecutor {
+    type Result = Option<u64>;
+
+    fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
+        let conn = self.pool.get().unwrap();
+
+        let result = conn.keys("ogn_history:*").map(|keys: Vec<String>| {
+            keys.iter().map(|key| conn.zcard(key).unwrap_or(0)).sum::<u64>()
+        });
+
+        match result {
+            Ok(num_records) => Some(num_records),
+            Err(error) => {
+                error!("Could not count OGN position records: {}", error);
+                None
+            },
+        }
+    }
+}
