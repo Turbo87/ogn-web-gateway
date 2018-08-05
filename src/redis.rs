@@ -110,3 +110,55 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use std::mem::size_of;
+    use bincode::{serialize, deserialize};
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct RedisOGNRecord {
+        pub seconds: i16,
+        pub altitude: i16,
+        pub longitude: f32,
+        pub latitude: f32,
+    }
+
+    #[test]
+    fn test_deserialization() {
+        let record1 = RedisOGNRecord {
+            seconds: 123,
+            altitude: 1234,
+            longitude: 52.987,
+            latitude: 7.456,
+        };
+
+        let record2 = RedisOGNRecord {
+            seconds: 234,
+            altitude: 2345,
+            longitude: 51.987,
+            latitude: 7.356,
+        };
+
+        let record3 = RedisOGNRecord {
+            seconds: 345,
+            altitude: 678,
+            longitude: 50.987,
+            latitude: 7.256,
+        };
+
+        let mut vec1 = serialize(&record1).unwrap();
+        let mut vec2 = serialize(&record2).unwrap();
+        let mut vec3 = serialize(&record3).unwrap();
+
+        vec1.append(&mut vec2);
+        vec1.append(&mut vec3);
+
+        let records: Vec<RedisOGNRecord> = vec1.chunks(size_of::<RedisOGNRecord>())
+            .map(|it| deserialize(it).unwrap())
+            .collect();
+
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0].seconds, 123);
+        assert_eq!(records[1].altitude, 2345);
+    }
+}
