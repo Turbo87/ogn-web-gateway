@@ -1,10 +1,10 @@
 use actix::prelude::*;
+use chrono::prelude::*;
+use bincode::serialize;
 use chrono::{Duration, Utc};
 use r2d2::Pool;
 use r2d2_redis::RedisConnectionManager;
 use _redis::Commands;
-
-use db::models::OGNPosition;
 
 pub struct RedisExecutor {
     pub pool: Pool<RedisConnectionManager>,
@@ -20,9 +20,16 @@ impl Actor for RedisExecutor {
     type Context = SyncContext<Self>;
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OGNPosition {
+    pub longitude: f32,
+    pub latitude: f32,
+    pub altitude: i16,
+}
+
 #[derive(Message)]
 pub struct AddOGNPositions {
-    pub positions: Vec<OGNPosition>,
+    pub positions: Vec<(String, DateTime<Utc>, OGNPosition)>,
 }
 
 impl Handler<AddOGNPositions> for RedisExecutor {
@@ -31,17 +38,11 @@ impl Handler<AddOGNPositions> for RedisExecutor {
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> () {
         let conn = self.pool.get().unwrap();
 
-        for pos in msg.positions {
-            let id = format!("ogn_history:{}", pos.ogn_id);
+        for (id, time, pos) in msg.positions {
+            let id = format!("ogn:{}", id);
+            let data = serialize(&pos).unwrap();
 
-            let data = format!(
-                "{:.6}|{:.6}|{}",
-                pos.longitude,
-                pos.latitude,
-                pos.altitude,
-            );
-
-            let result: Result<u32, _> = conn.zadd(id, data, pos.time.timestamp());
+            let result: Result<u32, _> = conn.zadd(id, data, time.timestamp());
 
             if let Err(error) = result {
                 error!("Could not create OGN position record in redis: {}", error);
@@ -62,7 +63,7 @@ impl Handler<CountOGNPositions> for RedisExecutor {
     fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get().unwrap();
 
-        let result = conn.keys("ogn_history:*").map(|keys: Vec<String>| {
+        let result = conn.keys("ogn:*").map(|keys: Vec<String>| {
             keys.iter().map(|key| conn.zcard(key).unwrap_or(0)).sum::<u64>()
         });
 
@@ -91,7 +92,7 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
         let cutoff_date = now - Duration::days(1);
         let max = cutoff_date.timestamp();
 
-        let result = conn.keys("ogn_history:*").map(|keys: Vec<String>| {
+        let result = conn.keys("ogn:*").map(|keys: Vec<String>| {
             keys.iter().map(|key| conn.zrembyscore(key, 0, max).unwrap_or_else(|error| {
                 error!("Could not remove old OGN position records for {}: {}", key, error);
                 0

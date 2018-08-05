@@ -1,4 +1,4 @@
-use chrono;
+use chrono::prelude::*;
 use actix::prelude::*;
 use std::collections::*;
 use std::time::Duration;
@@ -22,7 +22,7 @@ pub struct Gateway {
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
     db_buffer: Vec<OGNPosition>,
-    redis_buffer: Vec<OGNPosition>,
+    redis_buffer: Vec<(String, DateTime<Utc>, redis::OGNPosition)>,
 }
 
 impl Gateway {
@@ -206,7 +206,7 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         if let Some(position) = aprs::parse(&message.raw) {
-            let now = chrono::Utc::now();
+            let now = Utc::now();
             let time = time_to_datetime(now, position.time);
             let age = time - now;
 
@@ -251,13 +251,11 @@ impl Handler<OGNMessage> for Gateway {
             });
 
             // save record in the database
-            self.redis_buffer.push(OGNPosition {
-                ogn_id: position.id.to_owned(),
-                time,
-                longitude: position.longitude,
-                latitude: position.latitude,
-                altitude: position.altitude as i32,
-            });
+            self.redis_buffer.push((position.id.to_owned(), time, redis::OGNPosition {
+                longitude: position.longitude as f32,
+                latitude: position.latitude as f32,
+                altitude: position.altitude as i16,
+            }));
         }
     }
 }

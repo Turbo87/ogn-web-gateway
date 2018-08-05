@@ -22,6 +22,7 @@ sentry = "0.7.0"
 
 serde = "1.0.71"
 serde_derive = "1.0.71"
+bincode = "1.0.1"
 
 r2d2 = "0.8"
 r2d2_redis = "0.7"
