@@ -1,3 +1,5 @@
+use std::mem::size_of;
+
 use actix::prelude::*;
 use chrono::prelude::*;
 use bincode::serialize;
@@ -5,6 +7,7 @@ use chrono::{Duration, Utc};
 use r2d2::Pool;
 use r2d2_redis::RedisConnectionManager;
 use _redis::Commands;
+use regex::Regex;
 
 pub struct RedisExecutor {
     pub pool: Pool<RedisConnectionManager>,
@@ -18,6 +21,14 @@ impl RedisExecutor {
 
 impl Actor for RedisExecutor {
     type Context = SyncContext<Self>;
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RedisOGNRecord {
+    pub seconds: u16,
+    pub altitude: i16,
+    pub longitude: f32,
+    pub latitude: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,13 +50,22 @@ impl Handler<AddOGNPositions> for RedisExecutor {
         let conn = self.pool.get().unwrap();
 
         for (id, time, pos) in msg.positions {
-            let id = format!("ogn:{}", id);
-            let data = serialize(&pos).unwrap();
+            let bucket_time = time.with_minute(0).unwrap().with_second(0).unwrap();
+            let seconds = (time.minute() * 60 + time.second()) as u16;
 
-            let result: Result<u32, _> = conn.zadd(id, data, time.timestamp());
+            let key = format!("ogn:{}:{}", id, bucket_time.timestamp());
+
+            let value = serialize(&RedisOGNRecord {
+                seconds,
+                altitude: pos.altitude,
+                latitude: pos.latitude,
+                longitude: pos.longitude,
+            }).unwrap();
+
+            let result: Result<u32, _> = conn.append(key, value);
 
             if let Err(error) = result {
-                error!("Could not create OGN position record in redis: {}", error);
+                error!("Could not append OGN position record in redis: {}", error);
             }
         }
     }
@@ -63,8 +83,8 @@ impl Handler<CountOGNPositions> for RedisExecutor {
     fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get().unwrap();
 
-        let result = conn.keys("ogn:*").map(|keys: Vec<String>| {
-            keys.iter().map(|key| conn.zcard(key).unwrap_or(0)).sum::<u64>()
+        let result = conn.scan_match("ogn:*:*").map(|iter| {
+            iter.map(|key: String| conn.strlen(key).unwrap_or(0)).sum::<u64>()  / size_of::<RedisOGNRecord>() as u64
         });
 
         match result {
@@ -84,6 +104,10 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
     type Result = ();
 
     fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) -> () {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"ogn:[^:]+:(?P<bucket_time>\d+)").unwrap();
+        }
+
         let conn = self.pool.get().unwrap();
 
         info!("Dropping outdated OGN position records from redis…");
@@ -92,21 +116,26 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
         let cutoff_date = now - Duration::days(1);
         let max = cutoff_date.timestamp();
 
-        let result = conn.keys("ogn:*").map(|keys: Vec<String>| {
-            keys.iter().map(|key| conn.zrembyscore(key, 0, max).unwrap_or_else(|error| {
-                error!("Could not remove old OGN position records for {}: {}", key, error);
-                0
-            })).sum::<u64>()
-        });
-
-        match result {
-            Ok(num) => {
-                info!("Removed {} old OGN position records from Redis", num);
-            },
-            Err(error) => {
-                error!("Could not read OGN position records keys: {}", error);
-            },
+        let iter = conn.scan_match("ogn:*:*");
+        if iter.is_err() {
+            error!("Could not read OGN position records keys: {}", iter.err().unwrap());
+            return;
         }
+
+        iter.unwrap()
+            .filter(|key: &String| {
+                let caps = RE.captures(key);
+                if caps.is_none() { return false; }
+                let caps = caps.unwrap();
+                let bucket_time: i64 = caps.name("bucket_time").unwrap().as_str().parse().unwrap();
+                return bucket_time < max;
+            })
+            .for_each(|key: String| {
+                let result: Result<u64, _> = conn.del(key);
+                if let Err(error) = result {
+                    error!("Could not delete OGN position records: {}", error);
+                }
+            });
     }
 }
 
@@ -115,13 +144,7 @@ mod tests {
     use std::mem::size_of;
     use bincode::{serialize, deserialize};
 
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct RedisOGNRecord {
-        pub seconds: i16,
-        pub altitude: i16,
-        pub longitude: f32,
-        pub latitude: f32,
-    }
+    use super::RedisOGNRecord;
 
     #[test]
     fn test_deserialization() {
