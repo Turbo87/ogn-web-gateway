@@ -51,10 +51,10 @@ impl Handler<AddOGNPositions> for RedisExecutor {
         let conn = self.pool.get().unwrap();
 
         for (id, pos) in msg.positions {
-            let bucket_time = pos.time.with_minute(0).unwrap().with_second(0).unwrap();
+            let bucket_time = pos.time.to_bucket_time();
             let seconds = (pos.time.minute() * 60 + pos.time.second()) as u16;
 
-            let key = format!("ogn:{}:{}", id, bucket_time.timestamp());
+            let key = format!("ogn:{}:{}", id, bucket_time);
 
             let value = serialize(&RedisOGNRecord {
                 seconds,
@@ -137,6 +137,16 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
                     error!("Could not delete OGN position records: {}", error);
                 }
             });
+    }
+}
+
+trait ToBucketTime {
+    fn to_bucket_time(&self) -> i64;
+}
+
+impl ToBucketTime for DateTime<Utc> {
+    fn to_bucket_time(&self) -> i64 {
+        self.with_minute(0).unwrap().with_second(0).unwrap().timestamp()
     }
 }
 
