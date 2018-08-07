@@ -33,6 +33,7 @@ pub struct RedisOGNRecord {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct OGNPosition {
+    pub time: DateTime<Utc>,
     pub longitude: f32,
     pub latitude: f32,
     pub altitude: i16,
@@ -40,7 +41,7 @@ pub struct OGNPosition {
 
 #[derive(Message)]
 pub struct AddOGNPositions {
-    pub positions: Vec<(String, DateTime<Utc>, OGNPosition)>,
+    pub positions: Vec<(String, OGNPosition)>,
 }
 
 impl Handler<AddOGNPositions> for RedisExecutor {
@@ -49,9 +50,9 @@ impl Handler<AddOGNPositions> for RedisExecutor {
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> () {
         let conn = self.pool.get().unwrap();
 
-        for (id, time, pos) in msg.positions {
-            let bucket_time = time.with_minute(0).unwrap().with_second(0).unwrap();
-            let seconds = (time.minute() * 60 + time.second()) as u16;
+        for (id, pos) in msg.positions {
+            let bucket_time = pos.time.with_minute(0).unwrap().with_second(0).unwrap();
+            let seconds = (pos.time.minute() * 60 + pos.time.second()) as u16;
 
             let key = format!("ogn:{}:{}", id, bucket_time.timestamp());
 

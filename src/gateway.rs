@@ -22,7 +22,7 @@ pub struct Gateway {
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
     db_buffer: Vec<OGNPosition>,
-    redis_buffer: Vec<(String, DateTime<Utc>, redis::OGNPosition)>,
+    redis_buffer: Vec<(String, redis::OGNPosition)>,
 }
 
 impl Gateway {
@@ -251,7 +251,8 @@ impl Handler<OGNMessage> for Gateway {
             });
 
             // save record in the database
-            self.redis_buffer.push((position.id.to_owned(), time, redis::OGNPosition {
+            self.redis_buffer.push((position.id.to_owned(), redis::OGNPosition {
+                time,
                 longitude: position.longitude as f32,
                 latitude: position.latitude as f32,
                 altitude: position.altitude as i16,
