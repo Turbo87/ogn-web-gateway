@@ -24,6 +24,7 @@ extern crate sentry;
 
 extern crate serde;
 #[macro_use] extern crate serde_derive;
+extern crate serde_json;
 extern crate bincode;
 
 extern crate systemstat;
@@ -97,8 +98,8 @@ fn main() {
     });
 
 
-    let updater_db_addr = db_executor_addr.clone();
-    let _ogn_device_updater_addr = Arbiter::start(|_| OGNDevicesUpdater { db: updater_db_addr });
+    let updater_redis_addr = redis_executor_addr.clone();
+    let _ogn_device_updater_addr = Arbiter::start(|_| OGNDevicesUpdater { redis: updater_redis_addr });
 
     // Start "gateway" actor in separate thread
     let gateway_redis_addr = redis_executor_addr.clone();
