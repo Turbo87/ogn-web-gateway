@@ -11,7 +11,7 @@ use ::gateway;
 struct Status {
     load: Option<(f32, f32, f32)>,
     users: usize,
-    positions: Option<u64>,
+    positions: u64,
 }
 
 pub fn get(state: State<AppState>) -> impl Responder {
@@ -21,11 +21,13 @@ pub fn get(state: State<AppState>) -> impl Responder {
     ).and_then(|(gateway_status, position_count)| {
         let sys = systemstat::System::new();
 
-        Ok(Json(Status {
-            load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
-            users: gateway_status.users,
-            positions: position_count,
-        }))
+        position_count
+            .map(|position_count| Json(Status {
+                load: sys.load_average().ok().map(|load| (load.one, load.five, load.fifteen)),
+                users: gateway_status.users,
+                positions: position_count,
+            }))
+            .map_err(|err| err.into())
     })
     .responder()
 }
