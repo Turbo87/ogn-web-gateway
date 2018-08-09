@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use actix_web::*;
 use chrono::prelude::*;
+use failure;
 use futures::Future;
 
 use ::app::AppState;
-use ::db;
+use ::redis::{ReadOGNPositions, OGNPosition};
 
 #[derive(Deserialize, Debug)]
 pub struct GetQueryParams {
@@ -23,25 +24,36 @@ pub fn get((id, query, state): (Path<String>, Query<GetQueryParams>, State<AppSt
         .map(|it| DateTime::from_utc(it, Utc));
 
     let ids: Vec<_> = id.split(",").map(|s| s.to_owned()).collect();
-    let mut id_records_map: HashMap<String, Vec<String>> = ids.iter().map(|id| (id.to_owned(), Vec::new())).collect();
 
-    let db_request = db::ReadOGNPositions { ids: ids.clone(), after, before };
-
-    state.db.send(db_request).from_err::<Error>()
-        .and_then(|res: Option<Vec<db::models::OGNPosition>>| {
-            res.unwrap_or_else(|| Vec::new()).iter().for_each(|pos| {
-                let list = id_records_map.get_mut(&pos.ogn_id).unwrap();
-
-                list.push(format!(
-                    "{}|{:.6}|{:.6}|{}",
-                    pos.time.timestamp(),
-                    pos.longitude,
-                    pos.latitude,
-                    pos.altitude,
-                ));
-            });
-
-            Ok(Json(id_records_map))
+    state.redis.send(ReadOGNPositions { ids, after, before }).from_err::<Error>()
+        .and_then(|result: Result<HashMap<String, Vec<OGNPosition>>, failure::Error>| {
+            result
+                .map(|map| Json(map.serialize()))
+                .map_err(|err| err.into())
         })
         .responder()
+}
+
+trait SerializeRecords {
+    fn serialize(self) -> HashMap<String, Vec<String>>;
+}
+
+impl SerializeRecords for HashMap<String, Vec<OGNPosition>> {
+    fn serialize(self) -> HashMap<String, Vec<String>> {
+        self.into_iter()
+            .map(|(id, records)| {
+                let serialized = records.into_iter()
+                    .map(|record| format!(
+                            "{}|{:.6}|{:.6}|{}",
+                            record.time.timestamp(),
+                            record.longitude,
+                            record.latitude,
+                            record.altitude,
+                    ))
+                    .collect();
+
+                (id, serialized)
+            })
+            .collect()
+    }
 }

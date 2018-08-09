@@ -1,19 +1,23 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use actix::prelude::*;
 use actix_web::{client, HttpMessage};
 use futures::Future;
+use serde_json;
 
-use ::db::*;
+use ::redis::*;
 
 pub struct OGNDevicesUpdater {
-    pub db: Addr<DbExecutor>,
+    pub redis: Addr<RedisExecutor>,
 }
 
 impl Actor for OGNDevicesUpdater {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.notify(Update);
+
         ctx.run_interval(Duration::from_secs(3 * 60 * 60), |_act, ctx| {
             ctx.notify(Update);
         });
@@ -21,12 +25,12 @@ impl Actor for OGNDevicesUpdater {
 }
 
 #[derive(Debug, Deserialize)]
-struct OGNDeviceResponse {
-    devices: Vec<OGNDeviceRecord>,
+struct OGNDDBResponse {
+    devices: Vec<OGNDDBRecord>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OGNDeviceRecord {
+struct OGNDDBRecord {
     device_type: String,
     device_id: String,
     aircraft_model: String,
@@ -35,6 +39,23 @@ struct OGNDeviceRecord {
     cn: String,
     tracked: String,
     identified: String,
+}
+
+#[derive(Serialize)]
+struct DeviceInfo {
+    pub model: Option<String>,
+    pub registration: Option<String>,
+    pub callsign: Option<String>,
+
+    /**
+     * - 1: Gliders/Motorgliders
+     * - 2: Planes
+     * - 3: Ultralights
+     * - 4: Helicopters
+     * - 5: Drones/UAV
+     * - 6: Others
+     */
+    pub category: i16,
 }
 
 #[derive(Message)]
@@ -58,10 +79,8 @@ impl Handler<Update> for OGNDevicesUpdater {
                 error!("OGN Device Database parsing failed: {}", error);
             }))
             .into_actor(self)
-            .map(|response: OGNDeviceResponse, act, _ctx| {
-                let count = response.devices.len();
-
-                let devices: Vec<_> = response.devices.iter()
+            .map(|response: OGNDDBResponse, act, _ctx| {
+                let devices: HashMap<_, _> = response.devices.iter()
                     .filter_map(|d| {
                         let id_prefix = match d.device_type.as_ref() {
                             "F" => "FLR",
@@ -80,13 +99,13 @@ impl Handler<Update> for OGNDevicesUpdater {
                         let registration = if d.registration.is_empty() { None } else { Some(d.registration.clone()) };
                         let callsign = if d.cn.is_empty() { None } else { Some(d.cn.clone()) };
 
-                        Some(models::OGNDevice { ogn_id, model, category, registration, callsign })
+                        Some((ogn_id, DeviceInfo { model, registration, callsign, category }))
                     })
                     .collect();
 
-                match act.db.try_send(UpsertOGNDevices { devices }) {
+                match act.redis.try_send(WriteOGNDDB(serde_json::to_string(&devices).unwrap())) {
                     Ok(_) => {
-                        debug!("Updated {} OGN device records in the database", count);
+                        debug!("Updated OGN Device Database");
                     }
                     Err(error) => {
                         error!("OGN Device Database update failed: {}", error);

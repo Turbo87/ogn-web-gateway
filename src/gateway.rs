@@ -1,4 +1,4 @@
-use chrono;
+use chrono::prelude::*;
 use actix::prelude::*;
 use std::collections::*;
 use std::time::Duration;
@@ -8,28 +8,26 @@ use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use geo::BoundingBox;
 use time::time_to_datetime;
-
-use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
-use db::models::OGNPosition;
+use redis::{self, RedisExecutor};
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
 pub struct Gateway {
-    db: Addr<DbExecutor>,
+    redis: Addr<RedisExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
-    db_buffer: Vec<OGNPosition>,
+    redis_buffer: Vec<(String, redis::OGNPosition)>,
 }
 
 impl Gateway {
-    pub fn new(db: Addr<DbExecutor>) -> Gateway {
+    pub fn new(redis: Addr<RedisExecutor>) -> Gateway {
         Gateway {
-            db,
+            redis,
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
-            db_buffer: Vec::new(),
+            redis_buffer: Vec::new(),
         }
     }
 
@@ -40,16 +38,16 @@ impl Gateway {
     }
 
     fn flush_records(&mut self) {
-        let buffer = self.db_buffer.split_off(0);
+        let buffer = self.redis_buffer.split_off(0);
 
         let count = buffer.len();
         if count > 0 {
-            match self.db.try_send(CreateOGNPositions { positions: buffer }) {
+            match self.redis.try_send(redis::AddOGNPositions { positions: buffer }) {
                 Ok(_) => {
-                    debug!("Flushed {} OGN position records to the database", count);
+                    debug!("Flushed {} OGN position records to redis", count);
                 }
                 Err(error) => {
-                    error!("Could not flush new OGN position records to the database: {}", error);
+                    error!("Could not flush new OGN position records to redis: {}", error);
                 }
             }
         }
@@ -57,7 +55,7 @@ impl Gateway {
 
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
         ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
-            act.db.do_send(DropOldOGNPositions);
+            act.redis.do_send(redis::DropOldOGNPositions);
         });
     }
 }
@@ -186,7 +184,7 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         if let Some(position) = aprs::parse(&message.raw) {
-            let now = chrono::Utc::now();
+            let now = Utc::now();
             let time = time_to_datetime(now, position.time);
             let age = time - now;
 
@@ -222,13 +220,12 @@ impl Handler<OGNMessage> for Gateway {
             }
 
             // save record in the database
-            self.db_buffer.push(OGNPosition {
-                ogn_id: position.id.to_owned(),
+            self.redis_buffer.push((position.id.to_owned(), redis::OGNPosition {
                 time,
-                longitude: position.longitude,
-                latitude: position.latitude,
-                altitude: position.altitude as i32,
-            });
+                longitude: position.longitude as f32,
+                latitude: position.latitude as f32,
+                altitude: position.altitude as i16,
+            }));
         }
     }
 }

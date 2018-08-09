@@ -1,4 +1,0 @@
-ALTER TABLE public.ogn_positions
-  ALTER COLUMN time
-    SET DATA TYPE TIMESTAMP WITH TIME ZONE
-    USING time AT TIME ZONE 'utc';
