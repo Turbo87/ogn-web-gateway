@@ -14,6 +14,8 @@ impl Actor for OGNDevicesUpdater {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.notify(Update);
+
         ctx.run_interval(Duration::from_secs(3 * 60 * 60), |_act, ctx| {
             ctx.notify(Update);
         });
