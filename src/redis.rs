@@ -1,12 +1,14 @@
+use std::collections::HashMap;
 use std::mem::size_of;
 
 use actix::prelude::*;
 use chrono::prelude::*;
-use bincode::serialize;
+use bincode::{serialize, deserialize};
 use chrono::{Duration, Utc};
+use failure::Error;
 use r2d2::Pool;
 use r2d2_redis::RedisConnectionManager;
-use _redis::Commands;
+use _redis::{Commands, Connection};
 use regex::Regex;
 
 pub struct RedisExecutor {
@@ -137,6 +139,74 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
                     error!("Could not delete OGN position records: {}", error);
                 }
             });
+    }
+}
+
+pub struct ReadOGNPositions {
+    pub ids: Vec<String>,
+    pub after: Option<DateTime<Utc>>,
+    pub before: Option<DateTime<Utc>>,
+}
+
+impl Message for ReadOGNPositions {
+    type Result = Result<HashMap<String, Vec<OGNPosition>>, Error>;
+}
+
+impl Handler<ReadOGNPositions> for RedisExecutor {
+    type Result = Result<HashMap<String, Vec<OGNPosition>>, Error>;
+
+    fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
+        let conn = self.pool.get().unwrap();
+
+        let after = msg.after.unwrap_or_else(|| Utc::now() - Duration::days(1));
+        let before = msg.before.unwrap_or_else(|| Utc::now());
+
+        let mut result = HashMap::new();
+        for id in msg.ids {
+            let records = conn.get_ogn_records(&id, after, before)?;
+            result.insert(id, records);
+        }
+
+        Ok(result)
+    }
+}
+
+trait OGNRedisCommands {
+    fn get_ogn_records(&self, id: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<OGNPosition>, Error>;
+    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>, Error>;
+}
+
+impl OGNRedisCommands for Connection {
+    fn get_ogn_records(&self, id: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<OGNPosition>, Error> {
+        let mut result = Vec::new();
+        for bucket_time in bucket_times_between(from, to) {
+            result.extend(self.get_ogn_records_for_bucket(id, bucket_time)?);
+        }
+
+        result.sort_unstable_by_key(|it| it.time);
+
+        Ok(result)
+    }
+
+    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>, Error> {
+        let key = format!("ogn:{}:{}", id, bucket_time);
+        let value: Vec<u8> = self.get(key)?;
+
+        let mut result = Vec::new();
+        for chunk in value.chunks(size_of::<RedisOGNRecord>()) {
+            let record = deserialize::<RedisOGNRecord>(chunk)?;
+            let timestamp = bucket_time + record.seconds as i64;
+            let time = Utc.timestamp(timestamp, 0);
+
+            result.push(OGNPosition {
+                time,
+                latitude: record.latitude,
+                longitude: record.longitude,
+                altitude: record.altitude,
+            });
+        }
+
+        Ok(result)
     }
 }
 

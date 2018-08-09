@@ -23,5 +23,6 @@ pub fn build_app(db: Addr<DbExecutor>, redis: Addr<RedisExecutor>, gateway: Addr
         .route("/api/ddb", http::Method::GET,  api::ddb::get)
         .route("/api/status", http::Method::GET,  api::status::get)
         .route("/api/records/{id}", http::Method::GET, api::records::get)
+        .route("/api/rrecords/{id}", http::Method::GET, api::redis_records::get)
         .route("/api/live", http::Method::GET, api::live::get)
 }
