@@ -14,7 +14,6 @@ extern crate futures;
 extern crate r2d2;
 extern crate r2d2_redis;
 extern crate redis as _redis;
-#[macro_use] extern crate diesel;
 extern crate chrono;
 extern crate regex;
 #[macro_use] extern crate lazy_static;
@@ -35,8 +34,6 @@ use actix::*;
 use actix_web::server::HttpServer;
 use actix_ogn::OGNActor;
 
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
 use r2d2_redis::RedisConnectionManager;
 
 use std::env;
@@ -44,7 +41,6 @@ use std::env;
 mod api;
 mod app;
 mod aprs;
-mod db;
 mod gateway;
 mod geo;
 mod ogn_ddb;
@@ -54,12 +50,10 @@ mod units;
 mod ws_client;
 
 use app::build_app;
-use db::DbExecutor;
 use gateway::Gateway;
 use ogn_ddb::OGNDevicesUpdater;
 use redis::RedisExecutor;
 
-const DB_WORKERS: usize = 7;
 const REDIS_WORKERS: usize = 7;
 
 fn main() {
@@ -69,23 +63,10 @@ fn main() {
 
     setup_logging();
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
     let redis_url = _redis::parse_redis_url(&redis_url).unwrap();
 
     let sys = actix::System::new("ogn-web-gateway");
-
-    let db_connection_manager = ConnectionManager::<PgConnection>::new(database_url);
-    let db_pool = Pool::builder()
-        .max_size(DB_WORKERS as u32)
-        .build(db_connection_manager)
-        .expect("Failed to create pool.");
-
-    let db_executor_addr = SyncArbiter::start(DB_WORKERS, move || {
-        DbExecutor::new(db_pool.clone())
-    });
 
 
     let redis_connection_manager = RedisConnectionManager::new(redis_url).unwrap();
@@ -110,7 +91,7 @@ fn main() {
     let _ogn_addr: Addr<_> = Supervisor::start(|_| OGNActor::new(gw.recipient()));
 
     // Create Http server with websocket support
-    HttpServer::new(move || build_app(db_executor_addr.clone(), redis_executor_addr.clone(), gateway.clone()))
+    HttpServer::new(move || build_app(redis_executor_addr.clone(), gateway.clone()))
         .bind("127.0.0.1:8080")
         .unwrap()
         .start();
