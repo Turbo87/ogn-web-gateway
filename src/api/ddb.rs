@@ -19,12 +19,12 @@ pub fn get((state, request): (State<AppState>, HttpRequest<AppState>)) -> impl R
         .and_then(move |devices| {
             let devices = match devices {
                 None => HashMap::new(),
-                Some(devices) => devices.iter()
-                    .map(|d| (d.ogn_id.clone(), DeviceInfo {
-                        model: d.model.clone(),
+                Some(devices) => devices.into_iter()
+                    .map(|d| (d.ogn_id, DeviceInfo {
+                        model: d.model,
                         category: d.category,
-                        registration: d.registration.clone(),
-                        callsign: d.callsign.clone(),
+                        registration: d.registration,
+                        callsign: d.callsign,
                     }))
                     .collect(),
             };
