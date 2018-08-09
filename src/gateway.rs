@@ -10,12 +10,9 @@ use geo::BoundingBox;
 use time::time_to_datetime;
 use redis::{self, RedisExecutor};
 
-use db::DbExecutor;
-
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
 pub struct Gateway {
-    db: Addr<DbExecutor>,
     redis: Addr<RedisExecutor>,
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
@@ -24,9 +21,8 @@ pub struct Gateway {
 }
 
 impl Gateway {
-    pub fn new(db: Addr<DbExecutor>, redis: Addr<RedisExecutor>) -> Gateway {
+    pub fn new(redis: Addr<RedisExecutor>) -> Gateway {
         Gateway {
-            db,
             redis,
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
