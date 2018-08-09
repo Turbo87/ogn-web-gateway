@@ -3,8 +3,6 @@ extern crate pretty_env_logger;
 
 extern crate failure;
 
-extern crate rand;
-
 #[macro_use]
 extern crate actix;
 extern crate actix_web;

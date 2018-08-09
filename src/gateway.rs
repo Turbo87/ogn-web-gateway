@@ -104,7 +104,6 @@ impl Handler<Connect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) {
-        // register session with random id
         self.ws_clients.insert(msg.addr);
 
         debug!("Client connected ({} clients)", self.ws_clients.len());
