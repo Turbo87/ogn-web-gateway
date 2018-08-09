@@ -43,20 +43,31 @@ impl Handler<AddOGNPositions> for RedisExecutor {
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get().unwrap();
 
+        let mut appends = HashMap::new();
         for (id, pos) in msg.positions {
             let bucket_time = pos.time.to_bucket_time();
             let seconds = (pos.time.minute() * 60 + pos.time.second()) as u16;
-
-            let key = format!("ogn:{}:{}", id, bucket_time);
 
             let value = serialize(&RedisOGNRecord {
                 seconds,
                 altitude: pos.altitude,
                 latitude: pos.latitude,
                 longitude: pos.longitude,
-            }).unwrap();
+            })?;
 
-            conn.append(key, value)?;
+            appends
+                .entry(id)
+                .or_insert_with(|| HashMap::new())
+                .entry(bucket_time)
+                .or_insert_with(|| Vec::new())
+                .extend(value);
+        }
+
+        for (id, records) in appends {
+            for (bucket_time, records) in records {
+                let key = format!("ogn:{}:{}", id, bucket_time);
+                conn.append(key, records)?;
+            }
         }
 
         Ok(())
