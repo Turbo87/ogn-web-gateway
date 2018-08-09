@@ -104,50 +104,6 @@ impl Handler<CountOGNPositions> for DbExecutor {
     }
 }
 
-pub struct ReadOGNPositions {
-    pub ids: Vec<String>,
-    pub after: Option<DateTime<Utc>>,
-    pub before: Option<DateTime<Utc>>,
-}
-
-impl Message for ReadOGNPositions {
-    type Result = Option<Vec<OGNPosition>>;
-}
-
-impl Handler<ReadOGNPositions> for DbExecutor {
-    type Result = Option<Vec<OGNPosition>>;
-
-    fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        use diesel::dsl::*;
-        use db::schema::ogn_positions::dsl::*;
-
-        let conn: &PgConnection = &self.pool.get().unwrap();
-
-        let query = {
-            let mut query = ogn_positions.filter(ogn_id.eq(any(&msg.ids))).into_boxed();
-
-            match (msg.after, msg.before) {
-                (Some(after), Some(before)) => { query = query.filter(time.between(after, before)); }
-                (Some(after), None) => { query = query.filter(time.ge(after)); }
-                (None, Some(before)) => { query = query.filter(time.le(before)); }
-                _ => {},
-            }
-
-            query.order_by(time)
-        };
-
-        let result = query.load::<models::OGNPosition>(conn);
-
-        match result {
-            Ok(positions) => Some(positions),
-            Err(error) => {
-                error!("Could not read OGN position records: {}", error);
-                None // TODO this should return an error
-            },
-        }
-    }
-}
-
 #[derive(Message)]
 pub struct UpsertOGNDevices {
     pub devices: Vec<OGNDevice>,
