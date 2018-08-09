@@ -13,14 +13,14 @@ use itertools::Itertools;
 use redis::RedisExecutor;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RedisOGNRecord {
-    pub seconds: u16,
-    pub altitude: i16,
-    pub longitude: f32,
-    pub latitude: f32,
+struct RedisOGNRecord {
+    seconds: u16,
+    altitude: i16,
+    longitude: f32,
+    latitude: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct OGNPosition {
     pub time: DateTime<Utc>,
     pub longitude: f32,
