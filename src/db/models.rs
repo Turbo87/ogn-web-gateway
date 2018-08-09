@@ -1,5 +1,3 @@
-use diesel::sql_types::Float4;
-
 use db::schema::*;
 
 /*
@@ -20,10 +18,4 @@ pub struct OGNDevice {
     pub category: i16,
     pub registration: Option<String>,
     pub callsign: Option<String>,
-}
-
-#[derive(QueryableByName)]
-pub struct RowEstimate {
-    #[sql_type = "Float4"]
-    pub row_estimate: f32,
 }

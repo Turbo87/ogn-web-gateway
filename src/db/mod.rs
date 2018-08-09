@@ -45,40 +45,6 @@ impl Handler<DropOldOGNPositions> for DbExecutor {
     }
 }
 
-pub struct CountOGNPositions;
-
-impl Message for CountOGNPositions {
-    type Result = Option<i64>;
-}
-
-impl Handler<CountOGNPositions> for DbExecutor {
-    type Result = Option<i64>;
-
-    fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn: &PgConnection = &self.pool.get().unwrap();
-
-        let result = diesel::sql_query(r#"
-            SELECT row_estimate.row_estimate
-                FROM _timescaledb_catalog.hypertable h
-                    CROSS JOIN LATERAL (
-                        SELECT sum(cl.reltuples) AS row_estimate
-                            FROM _timescaledb_catalog.chunk c
-                                JOIN pg_class cl ON cl.relname = c.table_name
-                            WHERE c.hypertable_id = h.id AND h.table_name = 'ogn_positions'
-                            GROUP BY h.schema_name, h.table_name
-                    ) row_estimate
-        "#).get_result::<RowEstimate>(conn);
-
-        match result {
-            Ok(row_estimate) => Some(row_estimate.row_estimate as i64),
-            Err(error) => {
-                error!("Could not count OGN position records: {}", error);
-                None
-            },
-        }
-    }
-}
-
 #[derive(Message)]
 pub struct UpsertOGNDevices {
     pub devices: Vec<OGNDevice>,
