@@ -1,6 +1,6 @@
 mod executor;
-mod messages;
+mod positions;
 mod time_buckets;
 
 pub use redis::executor::RedisExecutor;
-pub use redis::messages::*;
+pub use redis::positions::*;
