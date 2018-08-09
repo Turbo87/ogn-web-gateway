@@ -1,7 +1,6 @@
 use std::vec::Vec;
 
 use actix::prelude::*;
-use chrono::prelude::*;
 
 use diesel;
 use diesel::prelude::*;
@@ -24,30 +23,6 @@ impl DbExecutor {
 
 impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
-}
-
-#[derive(Message)]
-pub struct CreateOGNPositions {
-    pub positions: Vec<OGNPosition>,
-}
-
-impl Handler<CreateOGNPositions> for DbExecutor {
-    type Result = ();
-
-    fn handle(&mut self, msg: CreateOGNPositions, _ctx: &mut Self::Context) -> () {
-        use db::schema::ogn_positions::dsl::ogn_positions;
-
-        let conn: &PgConnection = &self.pool.get().unwrap();
-
-        let result = diesel::insert_into(ogn_positions)
-            .values(&msg.positions)
-            .on_conflict_do_nothing()
-            .execute(conn);
-
-        if let Err(error) = result {
-            error!("Could not create OGN position record in database: {}", error);
-        }
-    }
 }
 
 #[derive(Message)]

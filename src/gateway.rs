@@ -10,8 +10,7 @@ use geo::BoundingBox;
 use time::time_to_datetime;
 use redis::{self, RedisExecutor};
 
-use db::{DbExecutor, DropOldOGNPositions, CreateOGNPositions};
-use db::models::OGNPosition;
+use db::{DbExecutor, DropOldOGNPositions};
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -21,7 +20,6 @@ pub struct Gateway {
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
-    db_buffer: Vec<OGNPosition>,
     redis_buffer: Vec<(String, redis::OGNPosition)>,
 }
 
@@ -33,7 +31,6 @@ impl Gateway {
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
-            db_buffer: Vec::new(),
             redis_buffer: Vec::new(),
         }
     }
@@ -45,20 +42,6 @@ impl Gateway {
     }
 
     fn flush_records(&mut self) {
-        let buffer = self.db_buffer.split_off(0);
-
-        let count = buffer.len();
-        if count > 0 {
-            match self.db.try_send(CreateOGNPositions { positions: buffer }) {
-                Ok(_) => {
-                    debug!("Flushed {} OGN position records to the database", count);
-                }
-                Err(error) => {
-                    error!("Could not flush new OGN position records to the database: {}", error);
-                }
-            }
-        }
-
         let buffer = self.redis_buffer.split_off(0);
 
         let count = buffer.len();
@@ -240,15 +223,6 @@ impl Handler<OGNMessage> for Gateway {
                     subscriber.do_send(SendText(ws_message.clone()));
                 }
             }
-
-            // save record in the database
-            self.db_buffer.push(OGNPosition {
-                ogn_id: position.id.to_owned(),
-                time,
-                longitude: position.longitude,
-                latitude: position.latitude,
-                altitude: position.altitude as i32,
-            });
 
             // save record in the database
             self.redis_buffer.push((position.id.to_owned(), redis::OGNPosition {
