@@ -88,8 +88,6 @@ impl Handler<SendText> for WSClient {
 /// WebSocket message handler
 impl StreamHandler<ws::Message, ws::ProtocolError> for WSClient {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-        debug!("WEBSOCKET MESSAGE: {:?}", msg);
-
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Close(_) => ctx.stop(),
