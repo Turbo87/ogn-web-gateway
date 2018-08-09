@@ -10,7 +10,7 @@ use geo::BoundingBox;
 use time::time_to_datetime;
 use redis::{self, RedisExecutor};
 
-use db::{DbExecutor, DropOldOGNPositions};
+use db::DbExecutor;
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -59,7 +59,6 @@ impl Gateway {
 
     fn schedule_db_cleanup(ctx: &mut Context<Self>) {
         ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
-            act.db.do_send(DropOldOGNPositions);
             act.redis.do_send(redis::DropOldOGNPositions);
         });
     }

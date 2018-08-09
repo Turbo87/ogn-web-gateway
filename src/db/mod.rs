@@ -26,26 +26,6 @@ impl Actor for DbExecutor {
 }
 
 #[derive(Message)]
-pub struct DropOldOGNPositions;
-
-impl Handler<DropOldOGNPositions> for DbExecutor {
-    type Result = ();
-
-    fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) -> () {
-        let conn: &PgConnection = &self.pool.get().unwrap();
-
-        info!("Dropping outdated OGN position records from the database…");
-
-        let result = diesel::sql_query("SELECT drop_chunks(interval '24 hours', 'ogn_positions');")
-            .execute(conn);
-
-        if let Err(error) = result {
-            error!("Could not drop outdated OGN position records: {}", error);
-        }
-    }
-}
-
-#[derive(Message)]
 pub struct UpsertOGNDevices {
     pub devices: Vec<OGNDevice>,
 }
