@@ -10,6 +10,7 @@ use r2d2::Pool;
 use r2d2_redis::RedisConnectionManager;
 use _redis::{Commands, Connection};
 use regex::Regex;
+use itertools::Itertools;
 
 pub struct RedisExecutor {
     pub pool: Pool<RedisConnectionManager>,
@@ -192,13 +193,21 @@ impl OGNRedisCommands for Connection {
         let key = format!("ogn:{}:{}", id, bucket_time);
         let value: Vec<u8> = self.get(key)?;
 
-        let mut result = Vec::new();
-        for chunk in value.chunks(size_of::<RedisOGNRecord>()) {
-            let record = deserialize::<RedisOGNRecord>(chunk)?;
+
+        let results_iter = value
+            .chunks(size_of::<RedisOGNRecord>())
+            .map(|chunk| deserialize::<RedisOGNRecord>(chunk))
+            .unique_by(|result| {
+                result.as_ref().map(|record| record.seconds).unwrap_or(0)
+            });
+
+        let mut vec = Vec::new();
+        for result in results_iter {
+            let record = result?;
             let timestamp = bucket_time + record.seconds as i64;
             let time = Utc.timestamp(timestamp, 0);
 
-            result.push(OGNPosition {
+            vec.push(OGNPosition {
                 time,
                 latitude: record.latitude,
                 longitude: record.longitude,
@@ -206,7 +215,7 @@ impl OGNRedisCommands for Connection {
             });
         }
 
-        Ok(result)
+        Ok(vec)
     }
 }
 

@@ -19,6 +19,7 @@ futures = "0.1"
 chrono = "0.4.5"
 regex = "1"
 lazy_static = "1.0.2"
+itertools = "0.7"
 
 sentry = "0.7.0"
 
