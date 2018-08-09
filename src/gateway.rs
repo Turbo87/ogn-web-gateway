@@ -2,6 +2,7 @@ use chrono::prelude::*;
 use actix::prelude::*;
 use std::collections::*;
 use std::time::Duration;
+use futures::Future;
 
 use aprs;
 use ws_client::{WSClient, SendText};
@@ -32,24 +33,28 @@ impl Gateway {
     }
 
     fn schedule_db_flush(ctx: &mut Context<Self>) {
-        ctx.run_interval(Duration::from_secs(5), |act, _ctx| {
-            act.flush_records();
+        ctx.run_interval(Duration::from_secs(5), |act, ctx| {
+            act.flush_records(ctx);
         });
     }
 
-    fn flush_records(&mut self) {
+    fn flush_records(&mut self, ctx: &mut Context<Self>) {
         let buffer = self.redis_buffer.split_off(0);
 
         let count = buffer.len();
         if count > 0 {
-            match self.redis.try_send(redis::AddOGNPositions { positions: buffer }) {
-                Ok(_) => {
-                    debug!("Flushed {} OGN position records to redis", count);
-                }
-                Err(error) => {
-                    error!("Could not flush new OGN position records to redis: {}", error);
-                }
-            }
+            ctx.spawn(self.redis
+                .send(redis::AddOGNPositions { positions: buffer })
+                .then(move |result| {
+                    match result {
+                        Ok(Ok(())) => debug!("Flushed {} OGN position records to redis", count),
+                        Ok(Err(error)) => error!("Could not flush new OGN position records to redis: {}", error),
+                        Err(error) => error!("Could not flush new OGN position records to redis: {}", error),
+                    };
+                    Ok(())
+                })
+                .into_actor(self)
+            );
         }
     }
 

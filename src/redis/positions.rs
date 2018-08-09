@@ -29,15 +29,18 @@ pub struct OGNPosition {
     pub altitude: i16,
 }
 
-#[derive(Message)]
 pub struct AddOGNPositions {
     pub positions: Vec<(String, OGNPosition)>,
 }
 
-impl Handler<AddOGNPositions> for RedisExecutor {
-    type Result = ();
+impl Message for AddOGNPositions {
+    type Result = Result<(), Error>;
+}
 
-    fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> () {
+impl Handler<AddOGNPositions> for RedisExecutor {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get().unwrap();
 
         for (id, pos) in msg.positions {
@@ -53,12 +56,10 @@ impl Handler<AddOGNPositions> for RedisExecutor {
                 longitude: pos.longitude,
             }).unwrap();
 
-            let result: Result<u32, _> = conn.append(key, value);
-
-            if let Err(error) = result {
-                error!("Could not append OGN position record in redis: {}", error);
-            }
+            conn.append(key, value)?;
         }
+
+        Ok(())
     }
 }
 
