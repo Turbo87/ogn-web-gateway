@@ -38,12 +38,11 @@ use std::env;
 
 mod api;
 mod app;
-mod aprs;
 mod gateway;
 mod geo;
+mod ogn;
 mod ogn_ddb;
 mod redis;
-mod time;
 mod units;
 mod ws_client;
 

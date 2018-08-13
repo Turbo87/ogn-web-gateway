@@ -4,11 +4,10 @@ use std::collections::*;
 use std::time::Duration;
 use futures::Future;
 
-use aprs;
 use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use geo::BoundingBox;
-use time::time_to_datetime;
+use ogn;
 use redis::{self, RedisExecutor};
 
 /// `Gateway` manages connected websocket clients and distributes
@@ -187,9 +186,9 @@ impl Handler<OGNMessage> for Gateway {
     type Result = ();
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
-        if let Some(position) = aprs::parse(&message.raw) {
+        if let Some(position) = ogn::aprs::parse(&message.raw) {
             let now = Utc::now();
-            let time = time_to_datetime(now, position.time);
+            let time = ogn::time_to_datetime(now, position.time);
             let age = time - now;
 
             // throw away records older than 15min or more than 5min into the future
