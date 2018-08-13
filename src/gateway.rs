@@ -31,12 +31,6 @@ impl Gateway {
         }
     }
 
-    fn schedule_db_flush(ctx: &mut Context<Self>) {
-        ctx.run_interval(Duration::from_secs(5), |act, ctx| {
-            act.flush_records(ctx);
-        });
-    }
-
     fn flush_records(&mut self, ctx: &mut Context<Self>) {
         let buffer = self.redis_buffer.split_off(0);
 
@@ -69,7 +63,9 @@ impl Actor for Gateway {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Self::schedule_db_flush(ctx);
+        ctx.run_interval(Duration::from_secs(5), |act, ctx| {
+            act.flush_records(ctx);
+        });
 
         self.redis.do_send(redis::DropOldOGNPositions);
 
