@@ -25,6 +25,6 @@ before_install:
   - rustup component add rustfmt-preview
 
 script:
-  - cargo fmt -- --check
+  - if [[ $TRAVIS_RUST_VERSION == 1.28.0 ]]; then cargo fmt -- --check; fi
   - cargo build
   - cargo test
