@@ -125,6 +125,8 @@ impl Handler<Disconnect> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
+        self.bbox_subscriptions.remove(&msg.addr);
+
         self.id_subscriptions.values_mut().for_each(|subscribers| {
             if let Some(pos) = subscribers.iter().position(|x| *x == msg.addr) {
                 subscribers.remove(pos);
