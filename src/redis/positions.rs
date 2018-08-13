@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use bincode::{serialize, deserialize};
 use chrono::{Duration, Utc};
 use failure::Error;
-use _redis::{Commands, Connection};
+use _redis::{Commands, Connection, PipelineCommands, pipe};
 use regex::Regex;
 use itertools::Itertools;
 
@@ -63,12 +63,15 @@ impl Handler<AddOGNPositions> for RedisExecutor {
                 .extend(value);
         }
 
+        let mut pipeline = pipe();
         for (id, records) in appends {
             for (bucket_time, records) in records {
                 let key = format!("ogn:{}:{}", id, bucket_time);
-                conn.append(key, records)?;
+                pipeline.append(key, records);
             }
         }
+
+        pipeline.query(&*conn)?;
 
         Ok(())
     }

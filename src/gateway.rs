@@ -56,12 +56,6 @@ impl Gateway {
             );
         }
     }
-
-    fn schedule_db_cleanup(ctx: &mut Context<Self>) {
-        ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
-            act.redis.do_send(redis::DropOldOGNPositions);
-        });
-    }
 }
 
 impl Actor for Gateway {
@@ -69,7 +63,12 @@ impl Actor for Gateway {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         Self::schedule_db_flush(ctx);
-        Self::schedule_db_cleanup(ctx);
+
+        self.redis.do_send(redis::DropOldOGNPositions);
+
+        ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
+            act.redis.do_send(redis::DropOldOGNPositions);
+        });
     }
 }
 
