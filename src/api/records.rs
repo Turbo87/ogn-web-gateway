@@ -5,8 +5,8 @@ use chrono::prelude::*;
 use failure;
 use futures::Future;
 
-use ::app::AppState;
-use ::redis::{ReadOGNPositions, OGNPosition};
+use app::AppState;
+use redis::{OGNPosition, ReadOGNPositions};
 
 #[derive(Deserialize, Debug)]
 pub struct GetQueryParams {
@@ -14,23 +14,32 @@ pub struct GetQueryParams {
     after: Option<i64>,
 }
 
-pub fn get((id, query, state): (Path<String>, Query<GetQueryParams>, State<AppState>)) -> impl Responder {
-    let after = query.after
+pub fn get(
+    (id, query, state): (Path<String>, Query<GetQueryParams>, State<AppState>),
+) -> impl Responder {
+    let after = query
+        .after
         .and_then(|it| NaiveDateTime::from_timestamp_opt(it, 0))
         .map(|it| DateTime::from_utc(it, Utc));
 
-    let before = query.before
+    let before = query
+        .before
         .and_then(|it| NaiveDateTime::from_timestamp_opt(it, 0))
         .map(|it| DateTime::from_utc(it, Utc));
 
     let ids: Vec<_> = id.split(",").map(|s| s.to_owned()).collect();
 
-    state.redis.send(ReadOGNPositions { ids, after, before }).from_err::<Error>()
-        .and_then(|result: Result<HashMap<String, Vec<OGNPosition>>, failure::Error>| {
-            result
-                .map(|map| Json(map.serialize()))
-                .map_err(|err| err.into())
-        })
+    state
+        .redis
+        .send(ReadOGNPositions { ids, after, before })
+        .from_err::<Error>()
+        .and_then(
+            |result: Result<HashMap<String, Vec<OGNPosition>>, failure::Error>| {
+                result
+                    .map(|map| Json(map.serialize()))
+                    .map_err(|err| err.into())
+            },
+        )
         .responder()
 }
 
@@ -42,14 +51,17 @@ impl SerializeRecords for HashMap<String, Vec<OGNPosition>> {
     fn serialize(self) -> HashMap<String, Vec<String>> {
         self.into_iter()
             .map(|(id, records)| {
-                let serialized = records.into_iter()
-                    .map(|record| format!(
+                let serialized = records
+                    .into_iter()
+                    .map(|record| {
+                        format!(
                             "{}|{:.6}|{:.6}|{}",
                             record.time.timestamp(),
                             record.longitude,
                             record.latitude,
                             record.altitude,
-                    ))
+                        )
+                    })
                     .collect();
 
                 (id, serialized)

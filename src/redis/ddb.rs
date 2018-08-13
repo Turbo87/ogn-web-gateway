@@ -1,6 +1,6 @@
+use _redis::Commands;
 use actix::prelude::*;
 use failure::Error;
-use _redis::Commands;
 
 use redis::executor::RedisExecutor;
 

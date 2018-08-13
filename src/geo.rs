@@ -11,7 +11,8 @@ pub struct BoundingBox {
 impl BoundingBox {
     pub fn try_parse(text: &str) -> Option<BoundingBox> {
         lazy_static! {
-            static ref RE: Regex = Regex::new(r#"(?x)
+            static ref RE: Regex = Regex::new(
+                r#"(?x)
                 ^                           # start at the beginning of the string
                 (?P<left>-?\d+(?:\.\d*)?)   # left side of the bounding box in degrees
                 \|                          # separator
@@ -20,12 +21,18 @@ impl BoundingBox {
                 (?P<right>-?\d+(?:\.\d*)?)  # right side of the bounding box in degrees
                 \|                          # separator
                 (?P<top>-?\d+(?:\.\d*)?)    # top side of the bounding box in degrees
-            "#).unwrap();
+            "#
+            ).unwrap();
         }
 
         RE.captures(text).and_then(|caps| {
             let left = caps.name("left").unwrap().as_str().parse::<f64>().unwrap();
-            let bottom = caps.name("bottom").unwrap().as_str().parse::<f64>().unwrap();
+            let bottom = caps
+                .name("bottom")
+                .unwrap()
+                .as_str()
+                .parse::<f64>()
+                .unwrap();
             let right = caps.name("right").unwrap().as_str().parse::<f64>().unwrap();
             let top = caps.name("top").unwrap().as_str().parse::<f64>().unwrap();
 
@@ -37,21 +44,23 @@ impl BoundingBox {
                 return None;
             }
 
-            Some(BoundingBox { left, bottom, right, top })
+            Some(BoundingBox {
+                left,
+                bottom,
+                right,
+                top,
+            })
         })
     }
 
     pub fn contains(&self, longitude: f64, latitude: f64) -> bool {
-        latitude <= self.top &&
-            latitude >= self.bottom &&
-            (if self.left > self.right {
-                longitude >= self.left || longitude <= self.right
-            } else {
-                longitude >= self.left && longitude <= self.right
-            })
+        latitude <= self.top && latitude >= self.bottom && (if self.left > self.right {
+            longitude >= self.left || longitude <= self.right
+        } else {
+            longitude >= self.left && longitude <= self.right
+        })
     }
 }
-
 
 #[cfg(test)]
 mod tests {

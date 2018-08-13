@@ -1,14 +1,14 @@
-use chrono::prelude::*;
 use actix::prelude::*;
+use chrono::prelude::*;
+use futures::Future;
 use std::collections::*;
 use std::time::Duration;
-use futures::Future;
 
-use ws_client::{WSClient, SendText};
 use actix_ogn::OGNMessage;
 use geo::BoundingBox;
 use ogn;
 use redis::{self, RedisExecutor};
+use ws_client::{SendText, WSClient};
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -42,17 +42,24 @@ impl Gateway {
 
         let count = buffer.len();
         if count > 0 {
-            ctx.spawn(self.redis
-                .send(redis::AddOGNPositions { positions: buffer })
-                .then(move |result| {
-                    match result {
-                        Ok(Ok(())) => debug!("Flushed {} OGN position records to redis", count),
-                        Ok(Err(error)) => error!("Could not flush new OGN position records to redis: {}", error),
-                        Err(error) => error!("Could not flush new OGN position records to redis: {}", error),
-                    };
-                    Ok(())
-                })
-                .into_actor(self)
+            ctx.spawn(
+                self.redis
+                    .send(redis::AddOGNPositions { positions: buffer })
+                    .then(move |result| {
+                        match result {
+                            Ok(Ok(())) => debug!("Flushed {} OGN position records to redis", count),
+                            Ok(Err(error)) => error!(
+                                "Could not flush new OGN position records to redis: {}",
+                                error
+                            ),
+                            Err(error) => error!(
+                                "Could not flush new OGN position records to redis: {}",
+                                error
+                            ),
+                        };
+                        Ok(())
+                    })
+                    .into_actor(self),
             );
         }
     }
@@ -87,7 +94,7 @@ impl Handler<RequestStatus> for Gateway {
 
     fn handle(&mut self, _msg: RequestStatus, _ctx: &mut Context<Self>) -> Self::Result {
         MessageResult(StatusResponse {
-            users: self.ws_clients.len()
+            users: self.ws_clients.len(),
         })
     }
 }
@@ -140,12 +147,12 @@ impl Handler<SubscribeToId> for Gateway {
     type Result = ();
 
     fn handle(&mut self, msg: SubscribeToId, _ctx: &mut Context<Self>) {
-        self.id_subscriptions.entry(msg.id)
+        self.id_subscriptions
+            .entry(msg.id)
             .or_insert_with(|| Vec::new())
             .push(msg.addr);
     }
 }
-
 
 #[derive(Message)]
 pub struct UnsubscribeFromId {
@@ -165,7 +172,6 @@ impl Handler<UnsubscribeFromId> for Gateway {
     }
 }
 
-
 #[derive(Message)]
 pub struct SetBoundingBox {
     pub addr: Addr<WSClient>,
@@ -179,7 +185,6 @@ impl Handler<SetBoundingBox> for Gateway {
         self.bbox_subscriptions.insert(msg.addr, msg.bbox);
     }
 }
-
 
 impl Handler<OGNMessage> for Gateway {
     type Result = ();
@@ -196,7 +201,9 @@ impl Handler<OGNMessage> for Gateway {
             }
 
             // send record to subscribers
-            let mut subscribers: Vec<&Addr<WSClient>> = self.bbox_subscriptions.iter()
+            let mut subscribers: Vec<&Addr<WSClient>> = self
+                .bbox_subscriptions
+                .iter()
                 .filter(|(_, bbox)| bbox.contains(position.longitude, position.latitude))
                 .map(|(addr, _)| addr)
                 .collect();
@@ -222,12 +229,15 @@ impl Handler<OGNMessage> for Gateway {
             }
 
             // save record in the database
-            self.redis_buffer.push((position.id.to_owned(), redis::OGNPosition {
-                time,
-                longitude: position.longitude as f32,
-                latitude: position.latitude as f32,
-                altitude: position.altitude as i16,
-            }));
+            self.redis_buffer.push((
+                position.id.to_owned(),
+                redis::OGNPosition {
+                    time,
+                    longitude: position.longitude as f32,
+                    latitude: position.latitude as f32,
+                    altitude: position.altitude as i16,
+                },
+            ));
         }
     }
 }

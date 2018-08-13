@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::mem::size_of;
 
+use _redis::{pipe, Commands, Connection, PipelineCommands};
 use actix::prelude::*;
+use bincode::{deserialize, serialize};
 use chrono::prelude::*;
-use bincode::{serialize, deserialize};
 use chrono::{Duration, Utc};
 use failure::Error;
-use _redis::{Commands, Connection, PipelineCommands, pipe};
-use regex::Regex;
 use itertools::Itertools;
+use regex::Regex;
 
 use redis::executor::RedisExecutor;
 use redis::time_buckets::*;
@@ -120,14 +120,19 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
 
         let iter = conn.scan_match("ogn:*:*");
         if iter.is_err() {
-            error!("Could not read OGN position records keys: {}", iter.err().unwrap());
+            error!(
+                "Could not read OGN position records keys: {}",
+                iter.err().unwrap()
+            );
             return;
         }
 
         iter.unwrap()
             .filter(|key: &String| {
                 let caps = RE.captures(key);
-                if caps.is_none() { return false; }
+                if caps.is_none() {
+                    return false;
+                }
                 let caps = caps.unwrap();
                 let bucket_time: i64 = caps.name("bucket_time").unwrap().as_str().parse().unwrap();
                 return bucket_time < max;
@@ -171,12 +176,26 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
 }
 
 trait OGNRedisCommands {
-    fn get_ogn_records(&self, id: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<OGNPosition>, Error>;
-    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>, Error>;
+    fn get_ogn_records(
+        &self,
+        id: &str,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<Vec<OGNPosition>, Error>;
+    fn get_ogn_records_for_bucket(
+        &self,
+        id: &str,
+        bucket_time: i64,
+    ) -> Result<Vec<OGNPosition>, Error>;
 }
 
 impl OGNRedisCommands for Connection {
-    fn get_ogn_records(&self, id: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<Vec<OGNPosition>, Error> {
+    fn get_ogn_records(
+        &self,
+        id: &str,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<Vec<OGNPosition>, Error> {
         let mut result = Vec::new();
         for bucket_time in bucket_times_between(from, to) {
             result.extend(self.get_ogn_records_for_bucket(id, bucket_time)?);
@@ -187,17 +206,18 @@ impl OGNRedisCommands for Connection {
         Ok(result)
     }
 
-    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>, Error> {
+    fn get_ogn_records_for_bucket(
+        &self,
+        id: &str,
+        bucket_time: i64,
+    ) -> Result<Vec<OGNPosition>, Error> {
         let key = format!("ogn:{}:{}", id, bucket_time);
         let value: Vec<u8> = self.get(key)?;
-
 
         let results_iter = value
             .chunks(size_of::<RedisOGNRecord>())
             .map(|chunk| deserialize::<RedisOGNRecord>(chunk))
-            .unique_by(|result| {
-                result.as_ref().map(|record| record.seconds).unwrap_or(0)
-            });
+            .unique_by(|result| result.as_ref().map(|record| record.seconds).unwrap_or(0));
 
         let mut vec = Vec::new();
         for result in results_iter {
@@ -219,8 +239,8 @@ impl OGNRedisCommands for Connection {
 
 #[cfg(test)]
 mod tests {
+    use bincode::{deserialize, serialize};
     use std::mem::size_of;
-    use bincode::{serialize, deserialize};
 
     use super::RedisOGNRecord;
 
@@ -254,7 +274,8 @@ mod tests {
         vec1.append(&mut vec2);
         vec1.append(&mut vec3);
 
-        let records: Vec<RedisOGNRecord> = vec1.chunks(size_of::<RedisOGNRecord>())
+        let records: Vec<RedisOGNRecord> = vec1
+            .chunks(size_of::<RedisOGNRecord>())
             .map(|it| deserialize(it).unwrap())
             .collect();
 

@@ -1,11 +1,11 @@
-use std::vec::Vec;
 use std::time::Duration;
+use std::vec::Vec;
 
 use actix::*;
 use actix_web::ws;
 
-use gateway;
 use app::AppState;
+use gateway;
 use geo::BoundingBox;
 
 pub struct WSClient {
@@ -19,7 +19,6 @@ impl WSClient {
                 id: text[4..].to_owned(),
                 addr: ctx.address(),
             });
-
         } else if text.starts_with("-id|") {
             ctx.state().gateway.do_send(gateway::UnsubscribeFromId {
                 id: text[4..].to_owned(),
@@ -92,7 +91,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WSClient {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Close(_) => ctx.stop(),
             ws::Message::Text(text) => self.handle_message(&text, ctx),
-            _ => {},
+            _ => {}
         }
     }
 }

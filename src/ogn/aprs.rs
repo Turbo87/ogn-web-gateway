@@ -19,7 +19,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
     // FLRDD87AC>APRS,qAS,LFQB:/141950h4818.33N/00401.87E'014/034/A=005199 !W26! id06DD87AC +218fpm +2.5rot 17.8dB 0e -2.4kHz gps3x4 -1.0dBm
 
     lazy_static! {
-        static ref RE: Regex = Regex::new(r#"(?x)
+        static ref RE: Regex = Regex::new(
+            r#"(?x)
             (?P<id>[A-Z]{3}[\dA-F]{6}) # sender ID
             [^:]+:                     # header incl. separator
             /                          # position report indicator
@@ -36,7 +37,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             /                          # separator
             A=(?P<alt>\d{6})           # altitude in feet (converted to meters)
             (?:\x20!W(?P<ppe>\d\d)!)?  # position precision enhancement
-        "#).unwrap();
+        "#
+        ).unwrap();
     }
 
     RE.captures(line).map(|caps| {
@@ -49,7 +51,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
 
         let latitude = {
             let raw_angle = caps.name("lat").unwrap().as_str();
-            let mut angle = raw_angle[0..2].parse::<f64>().unwrap() + raw_angle[2..].parse::<f64>().unwrap() / 60.;
+            let mut angle = raw_angle[0..2].parse::<f64>().unwrap()
+                + raw_angle[2..].parse::<f64>().unwrap() / 60.;
 
             if let Some(ppe) = caps.name("ppe") {
                 let enhancement = ppe.as_str()[0..1].parse::<f64>().unwrap();
@@ -57,12 +60,17 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             }
 
             let hemisphere = caps.name("lat_sign").unwrap().as_str();
-            if hemisphere == "N" { angle } else { -angle }
+            if hemisphere == "N" {
+                angle
+            } else {
+                -angle
+            }
         };
 
         let longitude = {
             let raw_angle = caps.name("lon").unwrap().as_str();
-            let mut angle = raw_angle[0..3].parse::<f64>().unwrap() + raw_angle[3..].parse::<f64>().unwrap() / 60.;
+            let mut angle = raw_angle[0..3].parse::<f64>().unwrap()
+                + raw_angle[3..].parse::<f64>().unwrap() / 60.;
 
             if let Some(ppe) = caps.name("ppe") {
                 let enhancement = ppe.as_str()[1..2].parse::<f64>().unwrap();
@@ -70,14 +78,36 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             }
 
             let hemisphere = caps.name("lon_sign").unwrap().as_str();
-            if hemisphere == "E" { angle } else { -angle }
+            if hemisphere == "E" {
+                angle
+            } else {
+                -angle
+            }
         };
 
-        let course = caps.name("course").unwrap().as_str().parse::<i32>().unwrap();
+        let course = caps
+            .name("course")
+            .unwrap()
+            .as_str()
+            .parse::<i32>()
+            .unwrap();
 
-        let altitude = caps.name("alt").unwrap().as_str().parse::<f64>().unwrap().feet_to_meter();
+        let altitude = caps
+            .name("alt")
+            .unwrap()
+            .as_str()
+            .parse::<f64>()
+            .unwrap()
+            .feet_to_meter();
 
-        APRSPosition { id, time, latitude, longitude, altitude, course }
+        APRSPosition {
+            id,
+            time,
+            latitude,
+            longitude,
+            altitude,
+            course,
+        }
     })
 }
 

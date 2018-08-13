@@ -3,7 +3,8 @@ use futures::{Future, Stream};
 
 pub fn get(uri: Path<String>) -> impl Responder {
     client::ClientRequest::get(uri.as_ref())
-        .finish().unwrap()
+        .finish()
+        .unwrap()
         .send()
         .map_err(Error::from)
         .and_then(|resp| {

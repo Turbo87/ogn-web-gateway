@@ -5,23 +5,29 @@ pub fn time_to_datetime(now: DateTime<Utc>, time: NaiveTime) -> DateTime<Utc> {
     let datetime = now.date().and_time(time);
     let dt = now - datetime;
 
-    return DateTime::<Utc>::from_utc(if dt.num_hours() <= -12 {
-        datetime - Duration::days(1)
-    } else if dt.num_hours() >= 12 {
-        datetime + Duration::days(1)
-    } else {
-        datetime
-    }, Utc)
+    return DateTime::<Utc>::from_utc(
+        if dt.num_hours() <= -12 {
+            datetime - Duration::days(1)
+        } else if dt.num_hours() >= 12 {
+            datetime + Duration::days(1)
+        } else {
+            datetime
+        },
+        Utc,
+    );
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::*;
     use super::time_to_datetime;
+    use chrono::*;
 
     fn run_test(now: &str, time: &str, expected_date: &str) {
         let expected: DateTime<Utc> = format!("{}T{}Z", expected_date, time).parse().unwrap();
-        assert_eq!(time_to_datetime(now.parse().unwrap(), time.parse().unwrap()), expected);
+        assert_eq!(
+            time_to_datetime(now.parse().unwrap(), time.parse().unwrap()),
+            expected
+        );
     }
 
     #[test]
