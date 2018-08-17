@@ -11,9 +11,7 @@ extern crate actix_web;
 extern crate futures;
 
 extern crate chrono;
-extern crate r2d2;
 extern crate r2d2_redis;
-extern crate redis as _redis;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
@@ -66,12 +64,12 @@ fn main() {
     setup_logging();
 
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let redis_url = _redis::parse_redis_url(&redis_url).unwrap();
+    let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url).unwrap();
 
     let sys = actix::System::new("ogn-web-gateway");
 
     let redis_connection_manager = RedisConnectionManager::new(redis_url).unwrap();
-    let redis_pool = r2d2::Pool::builder()
+    let redis_pool = r2d2_redis::r2d2::Pool::builder()
         .build(redis_connection_manager)
         .unwrap();
 

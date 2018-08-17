@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use r2d2::Pool;
+use r2d2_redis::r2d2::Pool;
 use r2d2_redis::RedisConnectionManager;
 
 pub struct RedisExecutor {
