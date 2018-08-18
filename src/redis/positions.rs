@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::mem::size_of;
 
-use _redis::{pipe, Commands, Connection, PipelineCommands};
 use actix::prelude::*;
 use bincode::{deserialize, serialize};
 use chrono::prelude::*;
 use chrono::{Duration, Utc};
 use failure::Error;
 use itertools::Itertools;
+use r2d2_redis::redis::{pipe, Commands, Connection, PipelineCommands};
 use regex::Regex;
 
 use redis::executor::RedisExecutor;
