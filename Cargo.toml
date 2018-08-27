@@ -19,7 +19,7 @@ regex = "1"
 lazy_static = "1.0.2"
 itertools = "0.7"
 
-sentry = "0.7.0"
+sentry = "0.8.0"
 
 serde = "1.0.75"
 serde_derive = "1.0.75"
