@@ -175,21 +175,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
     }
 }
 
-trait OGNRedisCommands {
-    fn get_ogn_records(
-        &self,
-        id: &str,
-        from: DateTime<Utc>,
-        to: DateTime<Utc>,
-    ) -> Result<Vec<OGNPosition>, Error>;
-    fn get_ogn_records_for_bucket(
-        &self,
-        id: &str,
-        bucket_time: i64,
-    ) -> Result<Vec<OGNPosition>, Error>;
-}
-
-impl OGNRedisCommands for Connection {
+trait OGNRedisCommands: Commands {
     fn get_ogn_records(
         &self,
         id: &str,
@@ -236,6 +222,8 @@ impl OGNRedisCommands for Connection {
         Ok(vec)
     }
 }
+
+impl OGNRedisCommands for Connection {}
 
 #[cfg(test)]
 mod tests {
