@@ -182,9 +182,13 @@ trait OGNRedisCommands: Commands {
         from: DateTime<Utc>,
         to: DateTime<Utc>,
     ) -> Result<Vec<OGNPosition>, Error> {
-        let mut result = Vec::new();
+        let mut result: Vec<OGNPosition> = Vec::new();
         for bucket_time in bucket_times_between(from, to) {
-            result.extend(self.get_ogn_records_for_bucket(id, bucket_time)?);
+            result.extend(
+                self.get_ogn_records_for_bucket(id, bucket_time)?
+                    .into_iter()
+                    .filter(|it| it.time >= from && it.time <= to),
+            );
         }
 
         result.sort_unstable_by_key(|it| it.time);
