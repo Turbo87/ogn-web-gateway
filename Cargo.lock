@@ -1,6 +1,6 @@
 [[package]]
 name = "actix"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "actix_derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -22,8 +22,9 @@ dependencies = [
  "tokio-signal 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-tcp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-timer 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "trust-dns-resolver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trust-dns-proto 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trust-dns-resolver 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -31,7 +32,7 @@ name = "actix-ogn"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "actix 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "backoff 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-codec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -44,7 +45,7 @@ name = "actix-web"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "actix 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "brotli2 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1010,7 +1011,7 @@ dependencies = [
 name = "ogn-web-gateway"
 version = "0.1.0"
 dependencies = [
- "actix 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-ogn 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-web 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1902,7 +1903,7 @@ dependencies = [
 
 [[package]]
 name = "trust-dns-resolver"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2024,6 +2025,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "uuid"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "rand 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2116,7 +2125,7 @@ dependencies = [
 ]
 
 [metadata]
-"checksum actix 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)" = "79ad2aaef6647ec755ad4e6581e578694fda752c021bde3e0dd7f1174e25e74a"
+"checksum actix 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)" = "710e449bb7720ad245a7101f3698ebc743588e0f4ba2b07fe9d74323e348b835"
 "checksum actix-ogn 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b517586be9aac0581d887dbface993904fbbf8e1ce334b4996a9921cfcaf8fad"
 "checksum actix-web 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "79d66c9405feacf1ee8fc3cff25725270724be376e433fbd17c099c93156395f"
 "checksum actix_derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5b9d1525ef45e5e021f0b93dace157dcab5d792acb4cc78f3213787d65e2bb92"
@@ -2318,7 +2327,7 @@ dependencies = [
 "checksum tokio-tls 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "772f4b04e560117fe3b0a53e490c16ddc8ba6ec437015d91fa385564996ed913"
 "checksum tokio-udp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "137bda266504893ac4774e0ec4c2108f7ccdbcb7ac8dced6305fe9e4e0b5041a"
 "checksum trust-dns-proto 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "f1525ca4e26f5a09d81b79584f19225e7dba5606ae3a416311c2751c5cea60bb"
-"checksum trust-dns-resolver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "28b094ad60c4f51f36a493201d04d6605183c62bd5f0c73008a732f23950c156"
+"checksum trust-dns-resolver 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4a821ad51a29816420b8cac4b026756b81c023630b97eaa4c8090637ee3508bd"
 "checksum try-lock 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ee2aa4715743892880f70885373966c83d73ef1b0838a664ef0c76fffd35e7c2"
 "checksum typenum 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "612d636f949607bdf9b123b4a6f6d966dedf3ff669f7f045890d3a4a73948169"
 "checksum ucd-util 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "fd2be2d6639d0f8fe6cdda291ad456e23629558d466e2789d2c3e9892bda285d"
@@ -2334,6 +2343,7 @@ dependencies = [
 "checksum url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "74e7d099f1ee52f823d4bdd60c93c3602043c728f5db3b97bdb548467f7bddea"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
 "checksum uuid 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e1436e58182935dcd9ce0add9ea0b558e8a87befe01c1a301e6020aeb0876363"
+"checksum uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dab5c5526c5caa3d106653401a267fed923e7046f35895ffcb5ca42db64942e6"
 "checksum vcpkg 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "cbe533e138811704c0e3cbde65a818b35d3240409b4346256c5ede403e082474"
 "checksum version_check 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "6b772017e347561807c1aa192438c5fd74242a670a6cffacc40f2defd1dc069d"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
