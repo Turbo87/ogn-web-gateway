@@ -9,7 +9,7 @@ pretty_env_logger = "0.2"
 
 failure = "0.1"
 
-actix = "0.7.7"
+actix = "0.7.8"
 actix-web = { version = "0.7.3", features = ["default", "alpn"] }
 actix-ogn = "0.2"
 futures = "0.1"
