@@ -3,6 +3,7 @@ FROM clux/muslrust:latest as builder
 # Cache dependencies
 RUN mkdir ogn-web-gateway
 WORKDIR /ogn-web-gateway
+# Trick cargo into only pulling deps. https://github.com/rust-lang/cargo/issues/2644
 RUN mkdir src; echo "fn main(){}" > src/main.rs
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml

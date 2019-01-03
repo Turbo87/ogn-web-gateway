@@ -1,4 +1,6 @@
-# ogn-web-gateway
+ogn-web-gateway
+==============================================================================
+
 
 [![Build Status](https://travis-ci.org/Turbo87/ogn-web-gateway.svg?branch=master)](https://travis-ci.org/Turbo87/ogn-web-gateway)
 
@@ -10,7 +12,8 @@ This project contains a webserver that connects to the [OpenGliderNet],
 saves the received records to a database for 24 hours and relays all data to
 any connected WebSocket clients.
 
-## Docker Quickstart
+Docker Quickstart
+------------------------------------------------------------------------------
 
 With docker installed and this repo cloned, it's as easy as
 `docker-compose up`. You can easily verify that it is up with:
@@ -18,7 +21,8 @@ With docker installed and this repo cloned, it's as easy as
 curl http://0.0.0.0:8080/api/status
 ```
 
-## Installation & Usage
+Installation & Usage
+------------------------------------------------------------------------------
 
 This project uses the in-memory database [Redis] as the data store for
 the History API. Before attempting to install ogn-web-gateway make sure to
@@ -52,11 +56,19 @@ so don't be surprised. Once it is running you should be able to visit
 [git]: https://git-scm.com/
 [cargo]: https://doc.rust-lang.org/cargo/
 
-## API Documentation
+API Documentation
+------------------------------------------------------------------------------
 
 For the API documentation please have a look at the [`docs`](docs) folder.  
 
-## License
+Contributing
+------------------------------------------------------------------------------
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for instructions on contributing
+and how to use docker for a dev environment.
+
+License
+------------------------------------------------------------------------------
 
 This project is licensed under either of
 
