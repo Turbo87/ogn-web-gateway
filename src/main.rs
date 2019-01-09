@@ -1,5 +1,7 @@
 extern crate pretty_env_logger;
 #[macro_use]
+extern crate clap;
+#[macro_use]
 extern crate log;
 
 extern crate failure;
@@ -36,7 +38,9 @@ use actix_web::server::HttpServer;
 
 use r2d2_redis::RedisConnectionManager;
 
+use clap::{App, Arg};
 use std::env;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 mod api;
 mod app;
@@ -61,6 +65,25 @@ fn main() {
     sentry::integrations::panic::register_panic_handler();
 
     setup_logging();
+
+    let matches = App::new("OGN Web Gateway")
+        .arg(
+            Arg::with_name("host")
+                .short("h")
+                .long("host")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("port")
+                .short("p")
+                .long("port")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let listen_host =
+        value_t!(matches.value_of("host"), IpAddr).unwrap_or(Ipv4Addr::new(0, 0, 0, 0).into());
+    let listen_port = value_t!(matches.value_of("port"), u16).unwrap_or(8080);
 
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
     let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url).unwrap();
@@ -89,9 +112,11 @@ fn main() {
     let gw = gateway.clone();
     let _ogn_addr: Addr<_> = Supervisor::start(|_| OGNActor::new(gw.recipient()));
 
+    debug!("Listening on {}:{}", listen_host, listen_port);
+
     // Create Http server with websocket support
     HttpServer::new(move || build_app(redis_executor_addr.clone(), gateway.clone()))
-        .bind("127.0.0.1:8080")
+        .bind(SocketAddr::new(listen_host, listen_port))
         .unwrap()
         .start();
 
