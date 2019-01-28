@@ -40,7 +40,7 @@ use r2d2_redis::RedisConnectionManager;
 
 use clap::{App, Arg};
 use std::env;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 
 mod api;
 mod app;
@@ -71,19 +71,20 @@ fn main() {
             Arg::with_name("host")
                 .short("h")
                 .long("host")
+                .default_value("127.0.0.1")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("port")
                 .short("p")
                 .long("port")
+                .default_value("8080")
                 .takes_value(true),
         )
         .get_matches();
 
-    let listen_host = value_t!(matches.value_of("host"), IpAddr)
-        .unwrap_or_else(|_| Ipv4Addr::new(0, 0, 0, 0).into());
-    let listen_port = value_t!(matches.value_of("port"), u16).unwrap_or(8080);
+    let listen_host = value_t!(matches.value_of("host"), IpAddr).unwrap();
+    let listen_port = value_t!(matches.value_of("port"), u16).unwrap();
 
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
     let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url).unwrap();
