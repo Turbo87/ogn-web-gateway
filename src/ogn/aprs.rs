@@ -12,7 +12,7 @@ pub struct APRSPosition<'a> {
     pub course: i32,
 }
 
-pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
+pub fn parse(line: &str) -> Option<APRSPosition> {
     // Examples:
     // FLRDD9612>APRS,qAS,VillaBlau:/141956h4911.18N/00815.93E'126/059/A=003716 !W75! id06DD9612 -355fpm -1.2rot 3.0dB 2e -1.3kHz gps3x3
     // ICA4060D7>APRS,qAS,UKDUN2:/141953h5147.03N\00109.00W^210/143/A=003405 !W50! id214060D7 +079fpm +0.0rot 8.0dB 0e -11.9kHz gps3x4

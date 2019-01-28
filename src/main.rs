@@ -81,8 +81,8 @@ fn main() {
         )
         .get_matches();
 
-    let listen_host =
-        value_t!(matches.value_of("host"), IpAddr).unwrap_or(Ipv4Addr::new(0, 0, 0, 0).into());
+    let listen_host = value_t!(matches.value_of("host"), IpAddr)
+        .unwrap_or_else(|_| Ipv4Addr::new(0, 0, 0, 0).into());
     let listen_port = value_t!(matches.value_of("port"), u16).unwrap_or(8080);
 
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");

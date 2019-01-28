@@ -147,7 +147,7 @@ impl Handler<SubscribeToId> for Gateway {
     fn handle(&mut self, msg: SubscribeToId, _ctx: &mut Context<Self>) {
         self.id_subscriptions
             .entry(msg.id)
-            .or_insert_with(|| Vec::new())
+            .or_insert_with(Vec::new)
             .push(msg.addr);
     }
 }
