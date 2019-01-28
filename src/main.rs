@@ -124,7 +124,7 @@ fn main() {
 }
 
 fn setup_logging() {
-    let mut log_builder = pretty_env_logger::formatted_builder().unwrap();
+    let mut log_builder = pretty_env_logger::formatted_builder();
     if let Ok(s) = env::var("RUST_LOG") {
         log_builder.parse(&s);
     }
