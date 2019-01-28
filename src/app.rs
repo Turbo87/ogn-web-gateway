@@ -17,13 +17,11 @@ pub fn build_app(redis: Addr<RedisExecutor>, gateway: Addr<Gateway>) -> App<AppS
         .route("/", http::Method::GET, |_: HttpRequest<_>| {
             fs::NamedFile::open("static/websocket.html")
         })
-        .route(
-            "/api/cors-proxy/{uri:.+}",
-            http::Method::GET,
-            api::cors_proxy::get,
-        )
-        .route("/api/ddb", http::Method::GET, api::ddb::get)
-        .route("/api/status", http::Method::GET, api::status::get)
-        .route("/api/records/{id}", http::Method::GET, api::records::get)
-        .route("/api/live", http::Method::GET, api::live::get)
+        .resource("/api/cors-proxy/{uri:.+}", |r| {
+            r.get().with(api::cors_proxy::get)
+        })
+        .resource("/api/ddb", |r| r.get().with(api::ddb::get))
+        .resource("/api/status", |r| r.get().with(api::status::get))
+        .resource("/api/records/{id}", |r| r.get().with(api::records::get))
+        .resource("/api/live", |r| r.get().with(api::live::get))
 }
