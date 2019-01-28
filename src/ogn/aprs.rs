@@ -38,7 +38,8 @@ pub fn parse<'a>(line: &'a str) -> Option<APRSPosition<'a>> {
             A=(?P<alt>\d{6})           # altitude in feet (converted to meters)
             (?:\x20!W(?P<ppe>\d\d)!)?  # position precision enhancement
         "#
-        ).unwrap();
+        )
+        .unwrap();
     }
 
     RE.captures(line).map(|caps| {
