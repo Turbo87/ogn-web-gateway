@@ -5,7 +5,7 @@ pub fn time_to_datetime(now: DateTime<Utc>, time: NaiveTime) -> DateTime<Utc> {
     let datetime = now.date().and_time(time);
     let dt = now - datetime;
 
-    return DateTime::<Utc>::from_utc(
+    DateTime::<Utc>::from_utc(
         if dt.num_hours() <= -12 {
             datetime - Duration::days(1)
         } else if dt.num_hours() >= 12 {
@@ -14,7 +14,7 @@ pub fn time_to_datetime(now: DateTime<Utc>, time: NaiveTime) -> DateTime<Utc> {
             datetime
         },
         Utc,
-    );
+    )
 }
 
 #[cfg(test)]

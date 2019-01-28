@@ -33,3 +33,12 @@ jobs:
 
       script:
         - cargo fmt -- --check
+
+    - name: clippy
+      rust: 1.32.0
+
+      install:
+        - rustup component add clippy-preview
+
+      script:
+        - cargo clippy

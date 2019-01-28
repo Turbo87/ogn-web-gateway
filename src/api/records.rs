@@ -27,7 +27,7 @@ pub fn get(
         .and_then(|it| NaiveDateTime::from_timestamp_opt(it, 0))
         .map(|it| DateTime::from_utc(it, Utc));
 
-    let ids: Vec<_> = id.split(",").map(|s| s.to_owned()).collect();
+    let ids: Vec<_> = id.split(',').map(|s| s.to_owned()).collect();
 
     state
         .redis

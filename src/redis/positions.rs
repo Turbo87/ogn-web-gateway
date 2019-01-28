@@ -57,9 +57,9 @@ impl Handler<AddOGNPositions> for RedisExecutor {
 
             appends
                 .entry(id)
-                .or_insert_with(|| HashMap::new())
+                .or_insert_with(HashMap::new)
                 .entry(bucket_time)
-                .or_insert_with(|| Vec::new())
+                .or_insert_with(Vec::new)
                 .extend(value);
         }
 
@@ -105,7 +105,7 @@ pub struct DropOldOGNPositions;
 impl Handler<DropOldOGNPositions> for RedisExecutor {
     type Result = ();
 
-    fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) -> () {
+    fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"ogn:[^:]+:(?P<bucket_time>\d+)").unwrap();
         }
@@ -135,7 +135,7 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
                 }
                 let caps = caps.unwrap();
                 let bucket_time: i64 = caps.name("bucket_time").unwrap().as_str().parse().unwrap();
-                return bucket_time < max;
+                bucket_time < max
             })
             .for_each(|key: String| {
                 let result: Result<u64, _> = conn.del(key);
@@ -163,7 +163,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
         let conn = self.pool.get().unwrap();
 
         let after = msg.after.unwrap_or_else(|| Utc::now() - Duration::days(1));
-        let before = msg.before.unwrap_or_else(|| Utc::now());
+        let before = msg.before.unwrap_or_else(Utc::now);
 
         let mut result = HashMap::new();
         for id in msg.ids {
@@ -212,7 +212,7 @@ trait OGNRedisCommands: Commands {
         let mut vec = Vec::new();
         for result in results_iter {
             let record = result?;
-            let timestamp = bucket_time + record.seconds as i64;
+            let timestamp = bucket_time + i64::from(record.seconds);
             let time = Utc.timestamp(timestamp, 0);
 
             vec.push(OGNPosition {
