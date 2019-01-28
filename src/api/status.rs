@@ -24,7 +24,8 @@ pub fn get(state: State<AppState>) -> impl Responder {
             .redis
             .send(redis::CountOGNPositions)
             .from_err::<Error>(),
-    ).and_then(|(gateway_status, position_count)| {
+    )
+    .and_then(|(gateway_status, position_count)| {
         let sys = systemstat::System::new();
 
         position_count
@@ -40,5 +41,5 @@ pub fn get(state: State<AppState>) -> impl Responder {
             })
             .map_err(|err| err.into())
     })
-        .responder()
+    .responder()
 }

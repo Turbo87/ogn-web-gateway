@@ -22,7 +22,8 @@ impl BoundingBox {
                 \|                          # separator
                 (?P<top>-?\d+(?:\.\d*)?)    # top side of the bounding box in degrees
             "#
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         RE.captures(text).and_then(|caps| {
@@ -54,11 +55,13 @@ impl BoundingBox {
     }
 
     pub fn contains(&self, longitude: f64, latitude: f64) -> bool {
-        latitude <= self.top && latitude >= self.bottom && (if self.left > self.right {
-            longitude >= self.left || longitude <= self.right
-        } else {
-            longitude >= self.left && longitude <= self.right
-        })
+        latitude <= self.top
+            && latitude >= self.bottom
+            && (if self.left > self.right {
+                longitude >= self.left || longitude <= self.right
+            } else {
+                longitude >= self.left && longitude <= self.right
+            })
     }
 }
 
