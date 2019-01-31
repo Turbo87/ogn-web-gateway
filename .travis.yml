@@ -11,19 +11,21 @@ rust:
 matrix:
   fast_finish: true
 
-before_install:
-  - sudo add-apt-repository -y ppa:0k53d-karl-f830m/openssl
-  - sudo apt-get update -qq
-  - sudo apt-get install -y openssl libssl-dev
-
 jobs:
   include:
-    - name: test
+    - name: clippy + test
+
+      before_install:
+        - sudo add-apt-repository -y ppa:0k53d-karl-f830m/openssl
+        - sudo apt-get update -qq
+        - sudo apt-get install -y openssl libssl-dev
+        - rustup component add clippy-preview
 
       install:
         - cargo build
 
       script:
+        - cargo clippy
         - cargo test
 
     - name: rustfmt
@@ -33,11 +35,3 @@ jobs:
 
       script:
         - cargo fmt -- --check
-
-    - name: clippy
-
-      install:
-        - rustup component add clippy-preview
-
-      script:
-        - cargo clippy
