@@ -22,7 +22,7 @@ itertools = "0.8"
 sentry = "0.15.2"
 
 serde = "1.0.90"
-serde_derive = "1.0.90"
+serde_derive = "1.0.91"
 serde_json = "1.0"
 bincode = "1.1.3"
 
