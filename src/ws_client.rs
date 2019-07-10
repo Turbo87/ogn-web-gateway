@@ -1,5 +1,4 @@
 use std::time::Duration;
-use std::vec::Vec;
 
 use actix::*;
 use actix_web::ws;
@@ -9,7 +8,7 @@ use gateway;
 use geo::BoundingBox;
 
 pub struct WSClient {
-    buffer: Vec<String>,
+    buffer: String,
 }
 
 impl WSClient {
@@ -35,19 +34,18 @@ impl WSClient {
     }
 
     pub fn flush(&mut self, ctx: &mut <Self as Actor>::Context) {
-        let buffer = self.buffer.split_off(0);
-
-        let count = buffer.len();
-        if count > 0 {
-            let text = buffer.join("\n");
-            ctx.text(text);
+        if !self.buffer.is_empty() {
+            ctx.text(&self.buffer);
+            self.buffer.clear();
         }
     }
 }
 
 impl Default for WSClient {
     fn default() -> WSClient {
-        WSClient { buffer: Vec::new() }
+        WSClient {
+            buffer: String::new(),
+        }
     }
 }
 
@@ -80,7 +78,11 @@ impl Handler<SendText> for WSClient {
     type Result = ();
 
     fn handle(&mut self, message: SendText, _ctx: &mut Self::Context) {
-        self.buffer.push(message.0);
+        if !self.buffer.is_empty() {
+            self.buffer += "\n";
+        }
+
+        self.buffer += &message.0;
     }
 }
 
