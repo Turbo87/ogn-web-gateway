@@ -127,7 +127,7 @@ fn main() {
 fn setup_logging() {
     let mut log_builder = pretty_env_logger::formatted_builder();
     if let Ok(s) = env::var("RUST_LOG") {
-        log_builder.parse(&s);
+        log_builder.parse_filters(&s);
     }
     let logger = log_builder.build();
     let options = sentry::integrations::log::LoggerOptions {
