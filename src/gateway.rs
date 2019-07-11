@@ -1,14 +1,16 @@
-use actix::prelude::*;
-use chrono::prelude::*;
-use futures::Future;
 use std::collections::*;
 use std::time::Duration;
 
+use actix::prelude::*;
 use actix_ogn::OGNMessage;
-use geo::BoundingBox;
-use ogn;
-use redis::{self, RedisExecutor};
-use ws_client::{SendText, WSClient};
+use chrono::prelude::*;
+use futures::Future;
+use log::{debug, error};
+
+use crate::geo::BoundingBox;
+use crate::ogn;
+use crate::redis::{self, RedisExecutor};
+use crate::ws_client::{SendText, WSClient};
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.

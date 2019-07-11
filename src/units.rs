@@ -17,6 +17,7 @@ impl FeetToMeter for f64 {
 #[cfg(test)]
 mod tests {
     use super::FeetToMeter;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_feet_to_meter_f32() {

@@ -1,44 +1,11 @@
-extern crate pretty_env_logger;
-#[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate log;
-
-extern crate failure;
-
-extern crate actix;
-extern crate actix_ogn;
-extern crate actix_web;
-extern crate futures;
-
-extern crate chrono;
-extern crate r2d2_redis;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-extern crate itertools;
-
-extern crate sentry;
-
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate bincode;
-extern crate serde_json;
-
-extern crate systemstat;
-
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
-
 use actix::*;
 use actix_ogn::OGNActor;
 use actix_web::server::HttpServer;
 
 use r2d2_redis::RedisConnectionManager;
 
-use clap::{App, Arg};
+use clap::{value_t, App, Arg};
+use log::debug;
 use std::env;
 use std::net::{IpAddr, SocketAddr};
 
@@ -52,10 +19,10 @@ mod redis;
 mod units;
 mod ws_client;
 
-use app::build_app;
-use gateway::Gateway;
-use ogn_ddb::OGNDevicesUpdater;
-use redis::RedisExecutor;
+use crate::app::build_app;
+use crate::gateway::Gateway;
+use crate::ogn_ddb::OGNDevicesUpdater;
+use crate::redis::RedisExecutor;
 
 const REDIS_WORKERS: usize = 7;
 

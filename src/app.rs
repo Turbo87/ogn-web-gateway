@@ -1,11 +1,11 @@
-use actix::*;
-use actix_web::middleware::cors::Cors;
-use actix_web::middleware::Logger;
-use actix_web::*;
+use ::actix::*;
+use ::actix_web::middleware::cors::Cors;
+use ::actix_web::middleware::Logger;
+use ::actix_web::*;
 
-use api;
-use gateway::Gateway;
-use redis::RedisExecutor;
+use crate::api;
+use crate::gateway::Gateway;
+use crate::redis::RedisExecutor;
 
 pub struct AppState {
     pub redis: Addr<RedisExecutor>,
