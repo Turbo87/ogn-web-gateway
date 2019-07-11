@@ -4,9 +4,11 @@ use std::time::Duration;
 use actix::prelude::*;
 use actix_web::{client, HttpMessage};
 use futures::Future;
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use serde_json;
 
-use redis::*;
+use crate::redis::*;
 
 pub struct OGNDevicesUpdater {
     pub redis: Addr<RedisExecutor>,

@@ -2,7 +2,7 @@ use actix::prelude::*;
 use failure::Error;
 use r2d2_redis::redis::Commands;
 
-use redis::executor::RedisExecutor;
+use crate::redis::executor::RedisExecutor;
 
 pub struct ReadOGNDDB;
 

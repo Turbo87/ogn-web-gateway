@@ -1,8 +1,8 @@
 use actix_web::*;
 use futures::future::Future;
 
-use app::AppState;
-use redis;
+use crate::app::AppState;
+use crate::redis;
 
 pub fn get((state, request): (State<AppState>, HttpRequest<AppState>)) -> impl Responder {
     state

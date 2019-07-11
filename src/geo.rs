@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 
 #[derive(Debug)]
@@ -68,6 +69,7 @@ impl BoundingBox {
 #[cfg(test)]
 mod tests {
     use super::BoundingBox;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_parse_valid() {

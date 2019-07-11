@@ -3,9 +3,9 @@ use std::time::Duration;
 use actix::*;
 use actix_web::ws;
 
-use app::AppState;
-use gateway;
-use geo::BoundingBox;
+use crate::app::AppState;
+use crate::gateway;
+use crate::geo::BoundingBox;
 
 pub struct WSClient {
     buffer: String,

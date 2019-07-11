@@ -1,11 +1,12 @@
 use actix_web::*;
 use futures::future::Future;
+use serde::Serialize;
 
 use systemstat::{self, Platform};
 
-use app::AppState;
-use gateway;
-use redis;
+use crate::app::AppState;
+use crate::gateway;
+use crate::redis;
 
 #[derive(Serialize)]
 struct Status {

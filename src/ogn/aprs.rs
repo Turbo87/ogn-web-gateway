@@ -1,7 +1,8 @@
 use chrono::NaiveTime;
+use lazy_static::lazy_static;
 use regex::Regex;
 
-use units::FeetToMeter;
+use crate::units::FeetToMeter;
 
 pub struct APRSPosition<'a> {
     pub id: &'a str,
@@ -115,6 +116,7 @@ pub fn parse(line: &str) -> Option<APRSPosition> {
 #[cfg(test)]
 mod tests {
     use super::parse;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_parse_1() {
