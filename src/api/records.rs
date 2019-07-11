@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use actix_web::*;
+use actix::prelude::*;
+use actix_web::{web, Error, Responder};
 use chrono::prelude::*;
 use failure;
 use futures::Future;
 use serde::Deserialize;
 
-use crate::app::AppState;
-use crate::redis::{OGNPosition, ReadOGNPositions};
+use crate::redis::{OGNPosition, ReadOGNPositions, RedisExecutor};
 
 #[derive(Deserialize, Debug)]
 pub struct GetQueryParams {
@@ -16,8 +16,12 @@ pub struct GetQueryParams {
 }
 
 pub fn get(
-    (id, query, state): (Path<String>, Query<GetQueryParams>, State<AppState>),
-) -> impl Responder {
+    (id, query, redis): (
+        web::Path<String>,
+        web::Query<GetQueryParams>,
+        web::Data<Addr<RedisExecutor>>,
+    ),
+) -> impl Future<Item = impl Responder, Error = Error> {
     let after = query
         .after
         .and_then(|it| NaiveDateTime::from_timestamp_opt(it, 0))
@@ -30,18 +34,16 @@ pub fn get(
 
     let ids: Vec<_> = id.split(',').map(|s| s.to_owned()).collect();
 
-    state
-        .redis
+    redis
         .send(ReadOGNPositions { ids, after, before })
         .from_err::<Error>()
         .and_then(
             |result: Result<HashMap<String, Vec<OGNPosition>>, failure::Error>| {
                 result
-                    .map(|map| Json(map.serialize()))
+                    .map(|map| web::Json(map.serialize()))
                     .map_err(|err| err.into())
             },
         )
-        .responder()
 }
 
 trait SerializeRecords {
