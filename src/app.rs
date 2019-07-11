@@ -17,9 +17,6 @@ pub fn build_app(redis: Addr<RedisExecutor>, gateway: Addr<Gateway>) -> App<AppS
         .middleware(Logger::default())
         .configure(|app| {
             Cors::for_app(app)
-                .resource("/api/cors-proxy/{uri:.+}", |r| {
-                    r.get().with(api::cors_proxy::get)
-                })
                 .resource("/api/ddb", |r| r.get().with(api::ddb::get))
                 .resource("/api/status", |r| r.get().with(api::status::get))
                 .resource("/api/records/{id}", |r| r.get().with(api::records::get))
