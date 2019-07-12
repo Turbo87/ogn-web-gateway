@@ -69,10 +69,8 @@ impl Handler<Update> for OGNDevicesUpdater {
     fn handle(&mut self, _msg: Update, ctx: &mut Self::Context) {
         info!("Downloading OGN Device Database…");
 
-        // using HTTP because HTTPS needs the `alpn` feature on `actix-web`
-        // which can't be compiled on TravisCI right now :(
         Client::default()
-            .get("http://ddb.glidernet.org/download/?j=1&t=1")
+            .get("https://ddb.glidernet.org/download/?j=1&t=1")
             .send()
             .map_err(|error| {
                 warn!("OGN Device Database download failed: {}", error);
