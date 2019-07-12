@@ -119,7 +119,7 @@ impl Actor for Gateway {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.update_record_count(ctx);
 
-        ctx.run_interval(Duration::from_secs(60), |act, ctx| {
+        ctx.run_interval(Duration::from_secs(30 * 60), |act, ctx| {
             act.update_record_count(ctx);
         });
 
@@ -129,10 +129,10 @@ impl Actor for Gateway {
 
         ctx.run_later(Duration::from_secs(30), |act, ctx| {
             act.drop_outdated_records(ctx);
-        });
 
-        ctx.run_interval(Duration::from_secs(30 * 60), |act, ctx| {
-            act.drop_outdated_records(ctx);
+            ctx.run_interval(Duration::from_secs(30 * 60), |act, ctx| {
+                act.drop_outdated_records(ctx);
+            });
         });
     }
 }
