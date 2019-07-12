@@ -59,25 +59,34 @@ impl Gateway {
 
         let count = buffer.len();
         if count > 0 {
-            ctx.spawn(
-                self.redis
-                    .send(redis::AddOGNPositions { positions: buffer })
-                    .then(move |result| {
-                        match result {
-                            Ok(Ok(())) => debug!("Flushed {} OGN position records to redis", count),
-                            Ok(Err(error)) => error!(
-                                "Could not flush new OGN position records to redis: {}",
-                                error
-                            ),
-                            Err(error) => error!(
-                                "Could not flush new OGN position records to redis: {}",
-                                error
-                            ),
-                        };
-                        Ok(())
-                    })
-                    .into_actor(self),
-            );
+            let fut = self
+                .redis
+                .send(redis::AddOGNPositions { positions: buffer })
+                .map_err(|error| {
+                    error!(
+                        "Could not flush new OGN position records to redis: {}",
+                        error
+                    )
+                })
+                .into_actor(self)
+                .and_then(move |result, act, _ctx| {
+                    match result {
+                        Ok(()) => {
+                            debug!("Flushed {} OGN position records to redis", &count);
+                            if act.record_count.is_some() {
+                                act.record_count = Some(act.record_count.unwrap() + count as u64);
+                            }
+                        }
+                        Err(error) => error!(
+                            "Could not flush new OGN position records to redis: {}",
+                            error
+                        ),
+                    };
+
+                    fut::ok::<(), (), Self>(())
+                });
+
+            ctx.spawn(fut);
         }
     }
 
