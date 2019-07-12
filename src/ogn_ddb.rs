@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use actix::prelude::*;
-use actix_web::{client, HttpMessage};
+use actix_web::client::Client;
 use futures::Future;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -71,14 +71,13 @@ impl Handler<Update> for OGNDevicesUpdater {
 
         // using HTTP because HTTPS needs the `alpn` feature on `actix-web`
         // which can't be compiled on TravisCI right now :(
-        client::ClientRequest::get("http://ddb.glidernet.org/download/?j=1&t=1")
-            .finish()
-            .unwrap()
+        Client::default()
+            .get("http://ddb.glidernet.org/download/?j=1&t=1")
             .send()
             .map_err(|error| {
                 warn!("OGN Device Database download failed: {}", error);
             })
-            .and_then(|response| {
+            .and_then(|mut response| {
                 response.json().limit(4_000_000).map_err(|error| {
                     error!("OGN Device Database parsing failed: {}", error);
                 })

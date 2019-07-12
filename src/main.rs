@@ -1,16 +1,17 @@
-use actix::*;
-use actix_ogn::OGNActor;
-use actix_web::server::HttpServer;
-
-use r2d2_redis::RedisConnectionManager;
-
-use clap::{value_t, App, Arg};
-use log::debug;
 use std::env;
 use std::net::{IpAddr, SocketAddr};
 
+use ::actix::prelude::*;
+use ::actix_cors::Cors;
+use ::actix_files::NamedFile;
+use ::actix_ogn::OGNActor;
+use ::actix_web::middleware::Logger;
+use ::actix_web::{web, App, HttpServer};
+use ::clap::{self, value_t, Arg};
+use ::log::debug;
+use ::r2d2_redis::RedisConnectionManager;
+
 mod api;
-mod app;
 mod gateway;
 mod geo;
 mod ogn;
@@ -19,7 +20,6 @@ mod redis;
 mod units;
 mod ws_client;
 
-use crate::app::build_app;
 use crate::gateway::Gateway;
 use crate::ogn_ddb::OGNDevicesUpdater;
 use crate::redis::RedisExecutor;
@@ -33,7 +33,7 @@ fn main() {
 
     setup_logging();
 
-    let matches = App::new("OGN Web Gateway")
+    let matches = clap::App::new("OGN Web Gateway")
         .arg(
             Arg::with_name("host")
                 .short("h")
@@ -68,13 +68,14 @@ fn main() {
     });
 
     let updater_redis_addr = redis_executor_addr.clone();
-    let _ogn_device_updater_addr = Arbiter::start(|_| OGNDevicesUpdater {
+    let _ogn_device_updater_addr = OGNDevicesUpdater {
         redis: updater_redis_addr,
-    });
+    }
+    .start();
 
     // Start "gateway" actor in separate thread
     let gateway_redis_addr = redis_executor_addr.clone();
-    let gateway: Addr<_> = Arbiter::start(|_| Gateway::new(gateway_redis_addr));
+    let gateway: Addr<_> = Gateway::new(gateway_redis_addr).start();
 
     // Start OGN client in separate thread
     let gw = gateway.clone();
@@ -83,12 +84,26 @@ fn main() {
     debug!("Listening on {}:{}", listen_host, listen_port);
 
     // Create Http server with websocket support
-    HttpServer::new(move || build_app(redis_executor_addr.clone(), gateway.clone()))
-        .bind(SocketAddr::new(listen_host, listen_port))
-        .unwrap()
-        .start();
+    HttpServer::new(move || {
+        App::new()
+            .data(gateway.clone())
+            .data(redis_executor_addr.clone())
+            .wrap(Logger::default())
+            .service(
+                web::scope("/api")
+                    .wrap(Cors::default())
+                    .route("/ddb", web::to_async(api::ddb::get))
+                    .route("/status", web::to_async(api::status::get))
+                    .route("/records/{id}", web::to_async(api::records::get))
+                    .route("/live", web::to(api::live::get)),
+            )
+            .route("/", web::to(|| NamedFile::open("static/websocket.html")))
+    })
+    .bind(SocketAddr::new(listen_host, listen_port))
+    .unwrap()
+    .start();
 
-    sys.run();
+    sys.run().unwrap();
 }
 
 fn setup_logging() {
