@@ -105,11 +105,11 @@ impl Handler<CountOGNPositions> for RedisExecutor {
 pub struct DropOldOGNPositions;
 
 impl Message for DropOldOGNPositions {
-    type Result = Result<(), Error>;
+    type Result = Result<u64, Error>;
 }
 
 impl Handler<DropOldOGNPositions> for RedisExecutor {
-    type Result = Result<(), Error>;
+    type Result = Result<u64, Error>;
 
     fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         lazy_static! {
@@ -126,14 +126,13 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
 
         let iter = conn.scan_match("ogn:*:*");
         if iter.is_err() {
-            error!(
-                "Could not read OGN position records keys: {}",
-                iter.err().unwrap()
-            );
-            return Ok(());
+            let error = iter.err().unwrap();
+            error!("Could not read OGN position records keys: {}", error);
+            return Err(error.into());
         }
 
-        iter.unwrap()
+        let num_deleted_bytes = iter
+            .unwrap()
             .filter(|key: &String| {
                 let caps = RE.captures(key);
                 if caps.is_none() {
@@ -143,14 +142,24 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
                 let bucket_time: i64 = caps.name("bucket_time").unwrap().as_str().parse().unwrap();
                 bucket_time < max
             })
-            .for_each(|key: String| {
-                let result: Result<u64, _> = conn.del(key);
+            .filter_map(|key: String| {
+                let strlen_result: Result<u64, _> = conn.strlen(&key);
+
+                let result: Result<u64, _> = conn.del(&key);
                 if let Err(error) = result {
                     error!("Could not delete OGN position records: {}", error);
                 }
-            });
 
-        Ok(())
+                strlen_result.ok()
+            })
+            .sum::<u64>();
+
+        let num_deleted = num_deleted_bytes / size_of::<RedisOGNRecord>() as u64;
+        info!(
+            "Dropped {} outdated OGN position records from redis",
+            num_deleted
+        );
+        Ok(num_deleted)
     }
 }
 
