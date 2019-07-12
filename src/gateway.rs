@@ -5,7 +5,7 @@ use actix::prelude::*;
 use actix_ogn::OGNMessage;
 use chrono::prelude::*;
 use futures::Future;
-use log::{debug, error};
+use log::{debug, error, warn};
 
 use crate::geo::BoundingBox;
 use crate::ogn;
@@ -20,6 +20,7 @@ pub struct Gateway {
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
     redis_buffer: Vec<(String, redis::OGNPosition)>,
+    record_count: Option<u64>,
 }
 
 impl Gateway {
@@ -30,7 +31,27 @@ impl Gateway {
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
             redis_buffer: Vec::new(),
+            record_count: None,
         }
+    }
+
+    fn update_record_count(&self, ctx: &mut Context<Self>) {
+        let fut = self
+            .redis
+            .send(redis::CountOGNPositions)
+            .map_err(|error| {
+                warn!("Could not count OGN position records in redis: {}", error);
+            })
+            .into_actor(self)
+            .and_then(|result, act, _ctx| {
+                if act.record_count.is_none() || result.is_ok() {
+                    act.record_count = result.ok();
+                }
+
+                fut::ok::<(), (), Self>(())
+            });
+
+        ctx.spawn(fut);
     }
 
     fn flush_records(&mut self, ctx: &mut Context<Self>) {
@@ -65,6 +86,12 @@ impl Actor for Gateway {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        self.update_record_count(ctx);
+
+        ctx.run_interval(Duration::from_secs(60), |act, ctx| {
+            act.update_record_count(ctx);
+        });
+
         ctx.run_interval(Duration::from_secs(5), |act, ctx| {
             act.flush_records(ctx);
         });
@@ -85,6 +112,7 @@ impl Message for RequestStatus {
 
 pub struct StatusResponse {
     pub users: usize,
+    pub record_count: Option<u64>,
 }
 
 impl Handler<RequestStatus> for Gateway {
@@ -93,6 +121,7 @@ impl Handler<RequestStatus> for Gateway {
     fn handle(&mut self, _msg: RequestStatus, _ctx: &mut Context<Self>) -> Self::Result {
         MessageResult(StatusResponse {
             users: self.ws_clients.len(),
+            record_count: self.record_count,
         })
     }
 }
