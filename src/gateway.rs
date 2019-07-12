@@ -81,8 +81,26 @@ impl Gateway {
         }
     }
 
-    fn drop_outdated_records(&self) {
-        self.redis.do_send(redis::DropOldOGNPositions);
+    fn drop_outdated_records(&self, ctx: &mut Context<Self>) {
+        let fut = self
+            .redis
+            .send(redis::DropOldOGNPositions)
+            .map_err(|error| {
+                warn!(
+                    "Could not drop outdated OGN position records from redis: {}",
+                    error
+                );
+            })
+            .into_actor(self)
+            .and_then(|result, act, _ctx| {
+                if act.record_count.is_some() && result.is_ok() {
+                    act.record_count = Some(act.record_count.unwrap() + result.unwrap());
+                }
+
+                fut::ok::<(), (), Self>(())
+            });
+
+        ctx.spawn(fut);
     }
 }
 
@@ -100,10 +118,12 @@ impl Actor for Gateway {
             act.flush_records(ctx);
         });
 
-        self.drop_outdated_records();
+        ctx.run_later(Duration::from_secs(30), |act, ctx| {
+            act.drop_outdated_records(ctx);
+        });
 
-        ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
-            act.drop_outdated_records();
+        ctx.run_interval(Duration::from_secs(30 * 60), |act, ctx| {
+            act.drop_outdated_records(ctx);
         });
     }
 }
