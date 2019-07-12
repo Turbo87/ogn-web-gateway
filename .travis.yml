@@ -6,7 +6,7 @@ sudo: required
 dist: trusty
 language: rust
 rust:
-  - 1.32.0
+  - 1.36.0
 
 matrix:
   fast_finish: true
