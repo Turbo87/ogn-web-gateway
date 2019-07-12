@@ -80,6 +80,10 @@ impl Gateway {
             );
         }
     }
+
+    fn drop_outdated_records(&self) {
+        self.redis.do_send(redis::DropOldOGNPositions);
+    }
 }
 
 impl Actor for Gateway {
@@ -96,10 +100,10 @@ impl Actor for Gateway {
             act.flush_records(ctx);
         });
 
-        self.redis.do_send(redis::DropOldOGNPositions);
+        self.drop_outdated_records();
 
         ctx.run_interval(Duration::from_secs(30 * 60), |act, _ctx| {
-            act.redis.do_send(redis::DropOldOGNPositions);
+            act.drop_outdated_records();
         });
     }
 }
