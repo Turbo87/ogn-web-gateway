@@ -14,7 +14,7 @@ actix = "0.8.3"
 actix-cors = "0.1.0"
 actix-files = "0.1.3"
 actix-web = { version = "1.0.3", features = ["client", "ssl"] }
-actix-web-actors = "1.0.1"
+actix-web-actors = "1.0.2"
 actix-ogn = "0.3"
 futures = "0.1"
 
