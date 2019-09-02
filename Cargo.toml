@@ -18,7 +18,7 @@ actix-web-actors = "1.0.2"
 actix-ogn = "0.3"
 futures = "0.1"
 
-chrono = "0.4.7"
+chrono = "0.4.8"
 regex = "1"
 lazy_static = "1.4.0"
 itertools = "0.8"
