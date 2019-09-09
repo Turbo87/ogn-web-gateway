@@ -14,7 +14,7 @@ impl Handler<ReadOGNDDB> for RedisExecutor {
     type Result = Result<String, Error>;
 
     fn handle(&mut self, _msg: ReadOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         let result: Option<String> = conn.get("ogn-ddb")?;
         Ok(result.unwrap_or_else(|| "{}".to_string()))
     }
@@ -30,7 +30,7 @@ impl Handler<WriteOGNDDB> for RedisExecutor {
     type Result = Result<(), Error>;
 
     fn handle(&mut self, msg: WriteOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         conn.set("ogn-ddb", msg.0)?;
         Ok(())
     }

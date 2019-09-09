@@ -44,7 +44,7 @@ impl Handler<AddOGNPositions> for RedisExecutor {
     type Result = Result<(), Error>;
 
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         let mut appends = HashMap::new();
         for (id, pos) in msg.positions {
@@ -74,7 +74,7 @@ impl Handler<AddOGNPositions> for RedisExecutor {
             }
         }
 
-        pipeline.query(&*conn)?;
+        pipeline.query(&mut *conn)?;
 
         Ok(())
     }
@@ -90,10 +90,12 @@ impl Handler<CountOGNPositions> for RedisExecutor {
     type Result = Result<u64, Error>;
 
     fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
+
+        let keys = conn.scan_match::<&str, String>("ogn:*:*")?.collect::<Vec<_>>();
 
         let mut sum = 0;
-        for key in conn.scan_match::<&str, String>("ogn:*:*")? {
+        for key in keys {
             let length: u64 = conn.strlen(key)?;
             sum += length;
         }
@@ -116,7 +118,7 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
             static ref RE: Regex = Regex::new(r"ogn:[^:]+:(?P<bucket_time>\d+)").unwrap();
         }
 
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         info!("Dropping outdated OGN position records from redis…");
 
@@ -131,7 +133,7 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
             return Err(error.into());
         }
 
-        let num_deleted_bytes = iter
+        let matching_keys = iter
             .unwrap()
             .filter(|key: &String| {
                 let caps = RE.captures(key);
@@ -142,10 +144,14 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
                 let bucket_time: i64 = caps.name("bucket_time").unwrap().as_str().parse().unwrap();
                 bucket_time < max
             })
-            .filter_map(|key: String| {
-                let strlen_result: Result<u64, _> = conn.strlen(&key);
+            .collect::<Vec<_>>();
 
-                let result: Result<u64, _> = conn.del(&key);
+        let num_deleted_bytes = matching_keys
+            .iter()
+            .filter_map(|key: &String| {
+                let strlen_result: Result<u64, _> = conn.strlen(key);
+
+                let result: Result<u64, _> = conn.del(key);
                 if let Err(error) = result {
                     error!("Could not delete OGN position records: {}", error);
                 }
@@ -177,7 +183,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
     type Result = Result<HashMap<String, Vec<OGNPosition>>, Error>;
 
     fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         let after = msg.after.unwrap_or_else(|| Utc::now() - Duration::days(1));
         let before = msg.before.unwrap_or_else(Utc::now);
@@ -194,7 +200,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
 
 trait OGNRedisCommands: Commands {
     fn get_ogn_records(
-        &self,
+        &mut self,
         id: &str,
         from: DateTime<Utc>,
         to: DateTime<Utc>,
@@ -214,7 +220,7 @@ trait OGNRedisCommands: Commands {
     }
 
     fn get_ogn_records_for_bucket(
-        &self,
+        &mut self,
         id: &str,
         bucket_time: i64,
     ) -> Result<Vec<OGNPosition>, Error> {
