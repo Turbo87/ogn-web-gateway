@@ -1,4 +1,5 @@
 use std::collections::*;
+use std::iter::FromIterator;
 use std::time::Duration;
 
 use actix::prelude::*;
@@ -19,6 +20,7 @@ pub struct Gateway {
     ws_clients: HashSet<Addr<WSClient>>,
     id_subscriptions: HashMap<String, Vec<Addr<WSClient>>>,
     bbox_subscriptions: HashMap<Addr<WSClient>, BoundingBox>,
+    ignore_list: HashSet<String>,
     redis_buffer: Vec<(String, redis::OGNPosition)>,
     record_count: Option<u64>,
 }
@@ -30,6 +32,7 @@ impl Gateway {
             ws_clients: HashSet::new(),
             id_subscriptions: HashMap::new(),
             bbox_subscriptions: HashMap::new(),
+            ignore_list: HashSet::new(),
             redis_buffer: Vec::new(),
             record_count: None,
         }
@@ -111,6 +114,29 @@ impl Gateway {
 
         ctx.spawn(fut);
     }
+
+    fn update_ignore_list(&self, ctx: &mut Context<Self>) {
+        let fut = self
+            .redis
+            .send(redis::ReadOGNIgnore)
+            .map_err(|error| {
+                warn!("Could not read OGN ignore list from redis: {}", error);
+            })
+            .into_actor(self)
+            .and_then(|result, act, _ctx| {
+                if result.is_ok() {
+                    act.ignore_list = HashSet::from_iter(result.unwrap());
+                    debug!(
+                        "Updated OGN ignore list from redis: {} records",
+                        act.ignore_list.len()
+                    );
+                }
+
+                fut::ok::<(), (), Self>(())
+            });
+
+        ctx.spawn(fut);
+    }
 }
 
 impl Actor for Gateway {
@@ -132,6 +158,14 @@ impl Actor for Gateway {
 
             ctx.run_interval(Duration::from_secs(30 * 60), |act, ctx| {
                 act.drop_outdated_records(ctx);
+            });
+        });
+
+        ctx.run_later(Duration::from_secs(10), |act, ctx| {
+            act.update_ignore_list(ctx);
+
+            ctx.run_interval(Duration::from_secs(10 * 60), |act, ctx| {
+                act.update_ignore_list(ctx);
             });
         });
     }
@@ -253,6 +287,10 @@ impl Handler<OGNMessage> for Gateway {
 
     fn handle(&mut self, message: OGNMessage, _: &mut Context<Self>) {
         if let Some(position) = ogn::aprs::parse(&message.raw) {
+            if self.ignore_list.contains(position.id) {
+                return;
+            }
+
             let now = Utc::now();
             let time = ogn::time_to_datetime(now, position.time);
             let age = time - now;

@@ -43,6 +43,19 @@ struct OGNDDBRecord {
     identified: String,
 }
 
+impl OGNDDBRecord {
+    pub fn ogn_id(&self) -> Option<String> {
+        let id_prefix = match self.device_type.as_ref() {
+            "F" => "FLR",
+            "I" => "ICA",
+            "O" => "OGN",
+            _ => return None,
+        };
+
+        Some(format!("{}{}", id_prefix, self.device_id))
+    }
+}
+
 #[derive(Serialize)]
 struct DeviceInfo {
     pub model: Option<String>,
@@ -86,14 +99,10 @@ impl Handler<Update> for OGNDevicesUpdater {
                     .devices
                     .iter()
                     .filter_map(|d| {
-                        let id_prefix = match d.device_type.as_ref() {
-                            "F" => "FLR",
-                            "I" => "ICA",
-                            "O" => "OGN",
-                            _ => return None,
-                        };
-
-                        let ogn_id = format!("{}{}", id_prefix, d.device_id);
+                        let ogn_id = d.ogn_id();
+                        if ogn_id.is_none() {
+                            return None;
+                        }
 
                         let category = d.aircraft_type.parse::<i16>();
                         if category.is_err() {
@@ -118,7 +127,7 @@ impl Handler<Update> for OGNDevicesUpdater {
                         };
 
                         Some((
-                            ogn_id,
+                            ogn_id.unwrap(),
                             DeviceInfo {
                                 model,
                                 registration,
@@ -138,6 +147,32 @@ impl Handler<Update> for OGNDevicesUpdater {
                     }
                     Err(error) => {
                         error!("OGN Device Database update failed: {}", error);
+                    }
+                }
+
+                let ignored_device_ids = response
+                    .devices
+                    .iter()
+                    .filter_map(|d| {
+                        let ogn_id = d.ogn_id();
+                        if ogn_id.is_none() {
+                            return None;
+                        }
+
+                        if d.tracked != "N" {
+                            return None;
+                        }
+
+                        Some(ogn_id.unwrap())
+                    })
+                    .collect::<Vec<_>>();
+
+                match act.redis.try_send(WriteOGNIgnore(ignored_device_ids)) {
+                    Ok(_) => {
+                        debug!("Updated OGN ignore list");
+                    }
+                    Err(error) => {
+                        error!("OGN ignore list update failed: {}", error);
                     }
                 }
             })
