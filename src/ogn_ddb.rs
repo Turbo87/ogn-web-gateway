@@ -149,6 +149,32 @@ impl Handler<Update> for OGNDevicesUpdater {
                         error!("OGN Device Database update failed: {}", error);
                     }
                 }
+
+                let ignored_device_ids = response
+                    .devices
+                    .iter()
+                    .filter_map(|d| {
+                        let ogn_id = d.ogn_id();
+                        if ogn_id.is_none() {
+                            return None;
+                        }
+
+                        if d.tracked != "N" {
+                            return None;
+                        }
+
+                        Some(ogn_id.unwrap())
+                    })
+                    .collect::<Vec<_>>();
+
+                match act.redis.try_send(WriteOGNIgnore(ignored_device_ids)) {
+                    Ok(_) => {
+                        debug!("Updated OGN ignore list");
+                    }
+                    Err(error) => {
+                        error!("OGN ignore list update failed: {}", error);
+                    }
+                }
             })
             .wait(ctx);
         ;
