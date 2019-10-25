@@ -11,7 +11,7 @@ use log::{debug, error, warn};
 use crate::geo::BoundingBox;
 use crate::ogn;
 use crate::redis::{self, RedisExecutor};
-use crate::ws_client::{SendText, WSClient};
+use crate::ws_client::{SendTextFast, SendTextSlow, WSClient};
 
 /// `Gateway` manages connected websocket clients and distributes
 /// `OGNRecord` messages to them.
@@ -300,19 +300,20 @@ impl Handler<OGNMessage> for Gateway {
                 return;
             }
 
-            // send record to subscribers
-            let mut subscribers: Vec<&Addr<WSClient>> = self
+            // find subscribers
+            let id_subscribers = self.id_subscriptions.get(position.id);
+
+            let bbox_subscribers: Vec<&Addr<WSClient>> = self
                 .bbox_subscriptions
                 .iter()
                 .filter(|(_, bbox)| bbox.contains(position.longitude, position.latitude))
                 .map(|(addr, _)| addr)
+                .filter(|addr| id_subscribers.map_or(true, |list| !list.contains(addr)))
                 .collect();
 
-            if let Some(id_subscribers) = self.id_subscriptions.get(position.id) {
-                subscribers.extend(id_subscribers);
-            }
-
-            if !subscribers.is_empty() {
+            // send record to subscribers
+            if !bbox_subscribers.is_empty() || id_subscribers.map_or(false, |list| !list.is_empty())
+            {
                 let ws_message = format!(
                     "{}|{}|{:.6}|{:.6}|{}|{}",
                     position.id,
@@ -323,8 +324,14 @@ impl Handler<OGNMessage> for Gateway {
                     position.altitude as i32,
                 );
 
-                for subscriber in subscribers {
-                    subscriber.do_send(SendText(ws_message.clone()));
+                for subscriber in bbox_subscribers {
+                    subscriber.do_send(SendTextSlow(ws_message.clone()));
+                }
+
+                if let Some(id_subscribers) = id_subscribers {
+                    for subscriber in id_subscribers {
+                        subscriber.do_send(SendTextFast(ws_message.clone()));
+                    }
                 }
             }
 
