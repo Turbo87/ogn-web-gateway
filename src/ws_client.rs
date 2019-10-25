@@ -7,14 +7,16 @@ use crate::gateway;
 use crate::geo::BoundingBox;
 
 pub struct WSClient {
-    buffer: String,
+    fast_buffer: String,
+    slow_buffer: String,
     gateway: Addr<gateway::Gateway>,
 }
 
 impl WSClient {
     pub fn new(gateway: Addr<gateway::Gateway>) -> WSClient {
         WSClient {
-            buffer: String::new(),
+            fast_buffer: String::new(),
+            slow_buffer: String::new(),
             gateway,
         }
     }
@@ -40,10 +42,17 @@ impl WSClient {
         }
     }
 
-    pub fn flush(&mut self, ctx: &mut <Self as Actor>::Context) {
-        if !self.buffer.is_empty() {
-            ctx.text(&self.buffer);
-            self.buffer.clear();
+    pub fn flush_fast(&mut self, ctx: &mut <Self as Actor>::Context) {
+        if !self.fast_buffer.is_empty() {
+            ctx.text(&self.fast_buffer);
+            self.fast_buffer.clear();
+        }
+    }
+
+    pub fn flush_slow(&mut self, ctx: &mut <Self as Actor>::Context) {
+        if !self.slow_buffer.is_empty() {
+            ctx.text(&self.slow_buffer);
+            self.slow_buffer.clear();
         }
     }
 }
@@ -56,8 +65,12 @@ impl Actor for WSClient {
         let addr: Addr<_> = ctx.address();
         self.gateway.do_send(gateway::Connect { addr });
 
-        ctx.run_interval(Duration::from_millis(250), |act, ctx| {
-            act.flush(ctx);
+        ctx.run_interval(Duration::from_millis(100), |act, ctx| {
+            act.flush_fast(ctx);
+        });
+
+        ctx.run_interval(Duration::from_millis(1000), |act, ctx| {
+            act.flush_slow(ctx);
         });
     }
 
@@ -71,17 +84,32 @@ impl Actor for WSClient {
 }
 
 #[derive(Message, Clone)]
-pub struct SendText(pub String);
+pub struct SendTextFast(pub String);
 
-impl Handler<SendText> for WSClient {
+impl Handler<SendTextFast> for WSClient {
     type Result = ();
 
-    fn handle(&mut self, message: SendText, _ctx: &mut Self::Context) {
-        if !self.buffer.is_empty() {
-            self.buffer += "\n";
+    fn handle(&mut self, message: SendTextFast, _ctx: &mut Self::Context) {
+        if !self.fast_buffer.is_empty() {
+            self.fast_buffer += "\n";
         }
 
-        self.buffer += &message.0;
+        self.fast_buffer += &message.0;
+    }
+}
+
+#[derive(Message, Clone)]
+pub struct SendTextSlow(pub String);
+
+impl Handler<SendTextSlow> for WSClient {
+    type Result = ();
+
+    fn handle(&mut self, message: SendTextSlow, _ctx: &mut Self::Context) {
+        if !self.slow_buffer.is_empty() {
+            self.slow_buffer += "\n";
+        }
+
+        self.slow_buffer += &message.0;
     }
 }
 
