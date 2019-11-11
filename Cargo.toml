@@ -12,7 +12,7 @@ failure = "0.1"
 
 actix = "0.8.3"
 actix-cors = "0.1.0"
-actix-files = "0.1.6"
+actix-files = "0.1.7"
 actix-web = { version = "1.0.8", features = ["client", "ssl"] }
 actix-web-actors = "1.0.2"
 actix-ogn = "0.3"
