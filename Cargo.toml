@@ -16,7 +16,7 @@ actix-files = "0.1.7"
 actix-web = { version = "1.0.9", features = ["client", "ssl"] }
 actix-web-actors = "1.0.4"
 actix-ogn = "0.3"
-futures = "0.1"
+futures = "0.3"
 
 chrono = "0.4.10"
 regex = "1"
