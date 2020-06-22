@@ -11,7 +11,7 @@ pretty_env_logger = "0.3"
 failure = "0.1"
 
 actix = "0.8.3"
-actix-cors = "0.1.0"
+actix-cors = "0.2.0"
 actix-files = "0.1.7"
 actix-web = { version = "1.0.9", features = ["client", "ssl"] }
 actix-web-actors = "1.0.4"
