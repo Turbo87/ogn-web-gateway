@@ -177,6 +177,5 @@ impl Handler<Update> for OGNDevicesUpdater {
                 }
             })
             .wait(ctx);
-        ;
     }
 }

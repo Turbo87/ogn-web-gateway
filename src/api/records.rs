@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use actix::prelude::*;
 use actix_web::{web, Error, Responder};
+use anyhow::Result;
 use chrono::prelude::*;
-use failure;
 use futures::Future;
 use serde::Deserialize;
 
@@ -38,10 +38,10 @@ pub fn get(
         .send(ReadOGNPositions { ids, after, before })
         .from_err::<Error>()
         .and_then(
-            |result: Result<HashMap<String, Vec<OGNPosition>>, failure::Error>| {
+            |result: Result<HashMap<String, Vec<OGNPosition>>, anyhow::Error>| {
                 result
                     .map(|map| web::Json(map.serialize()))
-                    .map_err(|err| err.into())
+                    .map_err(|_err| From::from(()))
             },
         )
 }

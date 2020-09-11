@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::mem::size_of;
 
 use actix::prelude::*;
+use anyhow::Result;
 use bincode::{deserialize, serialize};
 use chrono::prelude::*;
 use chrono::{Duration, Utc};
-use failure::Error;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use log::{error, info};
@@ -37,11 +37,11 @@ pub struct AddOGNPositions {
 }
 
 impl Message for AddOGNPositions {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 }
 
 impl Handler<AddOGNPositions> for RedisExecutor {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -83,11 +83,11 @@ impl Handler<AddOGNPositions> for RedisExecutor {
 pub struct CountOGNPositions;
 
 impl Message for CountOGNPositions {
-    type Result = Result<u64, Error>;
+    type Result = Result<u64>;
 }
 
 impl Handler<CountOGNPositions> for RedisExecutor {
-    type Result = Result<u64, Error>;
+    type Result = Result<u64>;
 
     fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -105,11 +105,11 @@ impl Handler<CountOGNPositions> for RedisExecutor {
 pub struct DropOldOGNPositions;
 
 impl Message for DropOldOGNPositions {
-    type Result = Result<u64, Error>;
+    type Result = Result<u64>;
 }
 
 impl Handler<DropOldOGNPositions> for RedisExecutor {
-    type Result = Result<u64, Error>;
+    type Result = Result<u64>;
 
     fn handle(&mut self, _msg: DropOldOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         lazy_static! {
@@ -170,11 +170,11 @@ pub struct ReadOGNPositions {
 }
 
 impl Message for ReadOGNPositions {
-    type Result = Result<HashMap<String, Vec<OGNPosition>>, Error>;
+    type Result = Result<HashMap<String, Vec<OGNPosition>>>;
 }
 
 impl Handler<ReadOGNPositions> for RedisExecutor {
-    type Result = Result<HashMap<String, Vec<OGNPosition>>, Error>;
+    type Result = Result<HashMap<String, Vec<OGNPosition>>>;
 
     fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -198,7 +198,7 @@ trait OGNRedisCommands: Commands {
         id: &str,
         from: DateTime<Utc>,
         to: DateTime<Utc>,
-    ) -> Result<Vec<OGNPosition>, Error> {
+    ) -> Result<Vec<OGNPosition>> {
         let mut result: Vec<OGNPosition> = Vec::new();
         for bucket_time in bucket_times_between(from, to) {
             result.extend(
@@ -213,11 +213,7 @@ trait OGNRedisCommands: Commands {
         Ok(result)
     }
 
-    fn get_ogn_records_for_bucket(
-        &self,
-        id: &str,
-        bucket_time: i64,
-    ) -> Result<Vec<OGNPosition>, Error> {
+    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>> {
         let key = format!("ogn:{}:{}", id, bucket_time);
         let value: Vec<u8> = self.get(key)?;
 
