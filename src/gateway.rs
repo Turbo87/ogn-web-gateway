@@ -105,8 +105,10 @@ impl Gateway {
             })
             .into_actor(self)
             .and_then(|result, act, _ctx| {
-                if act.record_count.is_some() && result.is_ok() {
-                    act.record_count = Some(act.record_count.unwrap() + result.unwrap());
+                if let Some(current_count) = act.record_count {
+                    if let Ok(result) = result {
+                        act.record_count = Some(current_count + result);
+                    }
                 }
 
                 fut::ok::<(), (), Self>(())
@@ -124,8 +126,8 @@ impl Gateway {
             })
             .into_actor(self)
             .and_then(|result, act, _ctx| {
-                if result.is_ok() {
-                    act.ignore_list = HashSet::from_iter(result.unwrap());
+                if let Ok(result) = result {
+                    act.ignore_list = HashSet::from_iter(result);
                     debug!(
                         "Updated OGN ignore list from redis: {} records",
                         act.ignore_list.len()
