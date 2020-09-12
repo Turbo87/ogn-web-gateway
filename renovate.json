@@ -1,6 +1,7 @@
 {
   "extends": [
     "config:base",
+    ":automergePatch",
     ":dependencyDashboard",
     ":semanticCommitsDisabled"
   ],
@@ -8,10 +9,6 @@
     {
       "matchCurrentVersion": ">= 1.0.0",
       "updateTypes": ["minor"],
-      "automerge": true
-    },
-    {
-      "updateTypes": ["patch", "pin", "digest"],
       "automerge": true
     },
     {
