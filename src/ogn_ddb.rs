@@ -6,7 +6,6 @@ use actix_web::client::Client;
 use futures::Future;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 use crate::redis::*;
 
