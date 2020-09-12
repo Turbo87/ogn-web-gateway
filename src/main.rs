@@ -28,11 +28,27 @@ use crate::redis::RedisExecutor;
 const REDIS_WORKERS: usize = 7;
 
 fn main() -> Result<()> {
-    // reads sentry DSN from `SENTRY_DSN` environment variable
-    let _sentry = sentry::init(());
-    sentry::integrations::panic::register_panic_handler();
+    let logger = setup_logging();
 
-    setup_logging();
+    if let Ok(sentry_dsn) = env::var("SENTRY_DSN") {
+        let log_integration =
+            sentry::integrations::log::LogIntegration::default().with_env_logger_dest(Some(logger));
+
+        let sentry_options = sentry::ClientOptions {
+            // reads sentry DSN from `SENTRY_DSN` environment variable
+            dsn: Some(sentry_dsn.parse()?),
+            ..Default::default()
+        }
+        .add_integration(log_integration);
+
+        let _sentry = sentry::init(sentry_options);
+    } else {
+        let max_level = logger.filter();
+        let r = log::set_boxed_logger(Box::new(logger));
+        if r.is_ok() {
+            log::set_max_level(max_level);
+        }
+    }
 
     let matches = clap::App::new("OGN Web Gateway")
         .arg(
@@ -107,15 +123,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn setup_logging() {
+fn setup_logging() -> pretty_env_logger::env_logger::Logger {
     let mut log_builder = pretty_env_logger::formatted_builder();
     if let Ok(s) = env::var("RUST_LOG") {
         log_builder.parse_filters(&s);
     }
-    let logger = log_builder.build();
-    let options = sentry::integrations::log::LoggerOptions {
-        global_filter: Some(logger.filter()),
-        ..Default::default()
-    };
-    sentry::integrations::log::init(Some(Box::new(logger)), options);
+    log_builder.build()
 }
