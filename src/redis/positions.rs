@@ -9,7 +9,7 @@ use chrono::{Duration, Utc};
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use log::{error, info};
-use r2d2_redis::redis::{pipe, Commands, Connection, PipelineCommands};
+use r2d2_redis::redis::{pipe, Commands, Connection};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
