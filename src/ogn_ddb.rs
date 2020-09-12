@@ -6,7 +6,6 @@ use actix_web::client::Client;
 use futures::Future;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 use crate::redis::*;
 
@@ -99,10 +98,7 @@ impl Handler<Update> for OGNDevicesUpdater {
                     .devices
                     .iter()
                     .filter_map(|d| {
-                        let ogn_id = d.ogn_id();
-                        if ogn_id.is_none() {
-                            return None;
-                        }
+                        let ogn_id = d.ogn_id()?;
 
                         let category = d.aircraft_type.parse::<i16>();
                         if category.is_err() {
@@ -127,7 +123,7 @@ impl Handler<Update> for OGNDevicesUpdater {
                         };
 
                         Some((
-                            ogn_id.unwrap(),
+                            ogn_id,
                             DeviceInfo {
                                 model,
                                 registration,
@@ -154,16 +150,13 @@ impl Handler<Update> for OGNDevicesUpdater {
                     .devices
                     .iter()
                     .filter_map(|d| {
-                        let ogn_id = d.ogn_id();
-                        if ogn_id.is_none() {
-                            return None;
-                        }
+                        let ogn_id = d.ogn_id()?;
 
                         if d.tracked != "N" {
                             return None;
                         }
 
-                        Some(ogn_id.unwrap())
+                        Some(ogn_id)
                     })
                     .collect::<Vec<_>>();
 
