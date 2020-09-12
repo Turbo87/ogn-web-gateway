@@ -44,7 +44,7 @@ impl Handler<AddOGNPositions> for RedisExecutor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: AddOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         let mut appends = HashMap::new();
         for (id, pos) in msg.positions {
@@ -74,7 +74,7 @@ impl Handler<AddOGNPositions> for RedisExecutor {
             }
         }
 
-        pipeline.query(&*conn)?;
+        pipeline.query(&mut *conn)?;
 
         Ok(())
     }
@@ -90,10 +90,11 @@ impl Handler<CountOGNPositions> for RedisExecutor {
     type Result = Result<u64>;
 
     fn handle(&mut self, _msg: CountOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut iter_conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         let mut sum = 0;
-        for key in conn.scan_match::<&str, String>("ogn:*:*")? {
+        for key in iter_conn.scan_match::<&str, String>("ogn:*:*")? {
             let length: u64 = conn.strlen(key)?;
             sum += length;
         }
@@ -116,7 +117,8 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
             static ref RE: Regex = Regex::new(r"ogn:[^:]+:(?P<bucket_time>\d+)").unwrap();
         }
 
-        let conn = self.pool.get()?;
+        let mut iter_conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         info!("Dropping outdated OGN position records from redis…");
 
@@ -124,7 +126,7 @@ impl Handler<DropOldOGNPositions> for RedisExecutor {
         let cutoff_date = now - Duration::days(1);
         let max = cutoff_date.timestamp();
 
-        let iter = conn.scan_match("ogn:*:*");
+        let iter = iter_conn.scan_match("ogn:*:*");
         if iter.is_err() {
             let error = iter.err().unwrap();
             error!("Could not read OGN position records keys: {}", error);
@@ -177,7 +179,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
     type Result = Result<HashMap<String, Vec<OGNPosition>>>;
 
     fn handle(&mut self, msg: ReadOGNPositions, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
 
         let after = msg.after.unwrap_or_else(|| Utc::now() - Duration::days(1));
         let before = msg.before.unwrap_or_else(Utc::now);
@@ -194,7 +196,7 @@ impl Handler<ReadOGNPositions> for RedisExecutor {
 
 trait OGNRedisCommands: Commands {
     fn get_ogn_records(
-        &self,
+        &mut self,
         id: &str,
         from: DateTime<Utc>,
         to: DateTime<Utc>,
@@ -213,7 +215,11 @@ trait OGNRedisCommands: Commands {
         Ok(result)
     }
 
-    fn get_ogn_records_for_bucket(&self, id: &str, bucket_time: i64) -> Result<Vec<OGNPosition>> {
+    fn get_ogn_records_for_bucket(
+        &mut self,
+        id: &str,
+        bucket_time: i64,
+    ) -> Result<Vec<OGNPosition>> {
         let key = format!("ogn:{}:{}", id, bucket_time);
         let value: Vec<u8> = self.get(key)?;
 

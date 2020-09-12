@@ -14,7 +14,7 @@ impl Handler<ReadOGNDDB> for RedisExecutor {
     type Result = Result<String>;
 
     fn handle(&mut self, _msg: ReadOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         let result: Option<String> = conn.get("ogn-ddb")?;
         Ok(result.unwrap_or_else(|| "{}".to_string()))
     }
@@ -30,7 +30,7 @@ impl Handler<WriteOGNDDB> for RedisExecutor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: WriteOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         conn.set("ogn-ddb", msg.0)?;
         Ok(())
     }
@@ -46,7 +46,7 @@ impl Handler<ReadOGNIgnore> for RedisExecutor {
     type Result = Result<Vec<String>>;
 
     fn handle(&mut self, _msg: ReadOGNIgnore, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         let result: Option<String> = conn.get("ogn-ignore")?;
         if result.is_none() {
             return Ok(vec![]);
@@ -66,7 +66,7 @@ impl Handler<WriteOGNIgnore> for RedisExecutor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: WriteOGNIgnore, _ctx: &mut Self::Context) -> Self::Result {
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         conn.set("ogn-ignore", serde_json::to_string(&msg.0)?)?;
         Ok(())
     }
