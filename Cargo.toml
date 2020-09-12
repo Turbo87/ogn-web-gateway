@@ -23,7 +23,7 @@ log = "0.4"
 pretty_env_logger = "0.4"
 r2d2_redis = "0.13"
 regex = "1"
-sentry = "0.17.0"
+sentry = { version = "0.18", features = ["default", "with_log", "with_env_logger"] }
 serde = { version = "1.0.116", features = ["derive"] }
 serde_json = "1.0"
 systemstat = "0.1.5"
