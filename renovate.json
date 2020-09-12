@@ -6,13 +6,13 @@
   ],
   "packageRules": [
     {
-      "updateTypes": ["minor", "patch", "pin", "digest"],
+      "matchCurrentVersion": ">= 1.0.0",
+      "updateTypes": ["minor"],
       "automerge": true
     },
     {
-      "matchCurrentVersion": "< 1.0.0",
-      "updateTypes": ["minor"],
-      "automerge": false
+      "updateTypes": ["patch", "pin", "digest"],
+      "automerge": true
     },
     {
       "depTypeList": ["devDependencies"],
