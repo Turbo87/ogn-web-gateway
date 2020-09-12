@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use failure::Error;
+use anyhow::Result;
 use r2d2_redis::redis::Commands;
 
 use crate::redis::executor::RedisExecutor;
@@ -7,11 +7,11 @@ use crate::redis::executor::RedisExecutor;
 pub struct ReadOGNDDB;
 
 impl Message for ReadOGNDDB {
-    type Result = Result<String, Error>;
+    type Result = Result<String>;
 }
 
 impl Handler<ReadOGNDDB> for RedisExecutor {
-    type Result = Result<String, Error>;
+    type Result = Result<String>;
 
     fn handle(&mut self, _msg: ReadOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -23,11 +23,11 @@ impl Handler<ReadOGNDDB> for RedisExecutor {
 pub struct WriteOGNDDB(pub String);
 
 impl Message for WriteOGNDDB {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 }
 
 impl Handler<WriteOGNDDB> for RedisExecutor {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 
     fn handle(&mut self, msg: WriteOGNDDB, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -39,11 +39,11 @@ impl Handler<WriteOGNDDB> for RedisExecutor {
 pub struct ReadOGNIgnore;
 
 impl Message for ReadOGNIgnore {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<String>>;
 }
 
 impl Handler<ReadOGNIgnore> for RedisExecutor {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<String>>;
 
     fn handle(&mut self, _msg: ReadOGNIgnore, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;
@@ -59,11 +59,11 @@ impl Handler<ReadOGNIgnore> for RedisExecutor {
 pub struct WriteOGNIgnore(pub Vec<String>);
 
 impl Message for WriteOGNIgnore {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 }
 
 impl Handler<WriteOGNIgnore> for RedisExecutor {
-    type Result = Result<(), Error>;
+    type Result = Result<()>;
 
     fn handle(&mut self, msg: WriteOGNIgnore, _ctx: &mut Self::Context) -> Self::Result {
         let conn = self.pool.get()?;

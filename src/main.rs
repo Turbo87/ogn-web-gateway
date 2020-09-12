@@ -7,6 +7,7 @@ use ::actix_files::NamedFile;
 use ::actix_ogn::OGNActor;
 use ::actix_web::middleware::Logger;
 use ::actix_web::{web, App, HttpServer};
+use ::anyhow::{anyhow, Context, Result};
 use ::clap::{self, value_t, Arg};
 use ::log::debug;
 use ::r2d2_redis::RedisConnectionManager;
@@ -26,7 +27,7 @@ use crate::redis::RedisExecutor;
 
 const REDIS_WORKERS: usize = 7;
 
-fn main() {
+fn main() -> Result<()> {
     // reads sentry DSN from `SENTRY_DSN` environment variable
     let _sentry = sentry::init(());
     sentry::integrations::panic::register_panic_handler();
@@ -50,18 +51,17 @@ fn main() {
         )
         .get_matches();
 
-    let listen_host = value_t!(matches.value_of("host"), IpAddr).unwrap();
-    let listen_port = value_t!(matches.value_of("port"), u16).unwrap();
+    let listen_host = value_t!(matches.value_of("host"), IpAddr)?;
+    let listen_port = value_t!(matches.value_of("port"), u16)?;
 
-    let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url).unwrap();
+    let redis_url = env::var("REDIS_URL").context("REDIS_URL must be set")?;
+    let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url)
+        .map_err(|_| anyhow!("REDIS_URL could not be parsed"))?;
 
     let sys = actix::System::new("ogn-web-gateway");
 
-    let redis_connection_manager = RedisConnectionManager::new(redis_url).unwrap();
-    let redis_pool = r2d2_redis::r2d2::Pool::builder()
-        .build(redis_connection_manager)
-        .unwrap();
+    let redis_connection_manager = RedisConnectionManager::new(redis_url)?;
+    let redis_pool = r2d2_redis::r2d2::Pool::builder().build(redis_connection_manager)?;
 
     let redis_executor_addr = SyncArbiter::start(REDIS_WORKERS, move || {
         RedisExecutor::new(redis_pool.clone())
@@ -99,11 +99,12 @@ fn main() {
             )
             .route("/", web::to(|| NamedFile::open("static/websocket.html")))
     })
-    .bind(SocketAddr::new(listen_host, listen_port))
-    .unwrap()
+    .bind(SocketAddr::new(listen_host, listen_port))?
     .start();
 
-    sys.run().unwrap();
+    sys.run()?;
+
+    Ok(())
 }
 
 fn setup_logging() {

@@ -18,6 +18,6 @@ pub fn get(
                         .with_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                         .with_header("Content-Type", "application/json")
                 })
-                .map_err(|err| err.into())
+                .map_err(|_err| From::from(()))
         })
 }
