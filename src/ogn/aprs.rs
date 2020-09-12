@@ -120,7 +120,9 @@ mod tests {
 
     #[test]
     fn test_parse_1() {
-        let result = parse(r"FLRDD9612>APRS,qAS,VillaBlau:/141956h4911.18N/00815.93E'126/059/A=003716 !W75! id06DD9612 -355fpm -1.2rot 3.0dB 2e -1.3kHz gps3x3");
+        let result = parse(
+            r"FLRDD9612>APRS,qAS,VillaBlau:/141956h4911.18N/00815.93E'126/059/A=003716 !W75! id06DD9612 -355fpm -1.2rot 3.0dB 2e -1.3kHz gps3x3",
+        );
         assert!(result.is_some());
 
         let position = result.unwrap();
@@ -134,7 +136,9 @@ mod tests {
 
     #[test]
     fn test_parse_2() {
-        let result = parse(r"ICA4060D7>APRS,qAS,UKDUN2:/141953h5147.03N\00109.00W^210/143/A=003405 !W50! id214060D7 +079fpm +0.0rot 8.0dB 0e -11.9kHz gps3x4");
+        let result = parse(
+            r"ICA4060D7>APRS,qAS,UKDUN2:/141953h5147.03N\00109.00W^210/143/A=003405 !W50! id214060D7 +079fpm +0.0rot 8.0dB 0e -11.9kHz gps3x4",
+        );
         assert!(result.is_some());
 
         let position = result.unwrap();
@@ -148,7 +152,9 @@ mod tests {
 
     #[test]
     fn test_parse_3() {
-        let result = parse(r"FLRDD87AC>APRS,qAS,LFQB:/141950h4818.33N/00401.87E'014/034/A=005199 id06DD87AC +218fpm +2.5rot 17.8dB 0e -2.4kHz gps3x4 -1.0dBm");
+        let result = parse(
+            r"FLRDD87AC>APRS,qAS,LFQB:/141950h4818.33N/00401.87E'014/034/A=005199 id06DD87AC +218fpm +2.5rot 17.8dB 0e -2.4kHz gps3x4 -1.0dBm",
+        );
         assert!(result.is_some());
 
         let position = result.unwrap();
