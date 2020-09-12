@@ -21,7 +21,7 @@ itertools = "0.9"
 lazy_static = "1.4.0"
 log = "0.4"
 pretty_env_logger = "0.4"
-r2d2_redis = "0.9"
+r2d2_redis = "0.13"
 regex = "1"
 sentry = "0.17.0"
 serde = { version = "1.0.116", features = ["derive"] }
