@@ -24,10 +24,12 @@ mod ws_client;
 use crate::gateway::Gateway;
 use crate::ogn_ddb::OGNDevicesUpdater;
 use crate::redis::RedisExecutor;
+use actix_web::Responder;
 
 const REDIS_WORKERS: usize = 7;
 
-fn main() -> Result<()> {
+#[actix_web::main]
+async fn main() -> Result<()> {
     let logger = setup_logging();
 
     if let Ok(sentry_dsn) = env::var("SENTRY_DSN") {
@@ -74,8 +76,6 @@ fn main() -> Result<()> {
     let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url)
         .map_err(|_| anyhow!("REDIS_URL could not be parsed"))?;
 
-    let sys = actix::System::new("ogn-web-gateway");
-
     let redis_connection_manager = RedisConnectionManager::new(redis_url)?;
     let redis_pool = r2d2_redis::r2d2::Pool::builder().build(redis_connection_manager)?;
 
@@ -108,19 +108,22 @@ fn main() -> Result<()> {
             .service(
                 web::scope("/api")
                     .wrap(Cors::default())
-                    .route("/ddb", web::to_async(api::ddb::get))
-                    .route("/status", web::to_async(api::status::get))
-                    .route("/records/{id}", web::to_async(api::records::get))
-                    .route("/live", web::to(api::live::get)),
+                    .route("/ddb", web::get().to(api::ddb::get))
+                    .route("/status", web::get().to(api::status::get))
+                    .route("/records/{id}", web::get().to(api::records::get))
+                    .route("/live", web::get().to(api::live::get)),
             )
-            .route("/", web::to(|| NamedFile::open("static/websocket.html")))
+            .route("/", web::get().to(index))
     })
     .bind(SocketAddr::new(listen_host, listen_port))?
-    .start();
-
-    sys.run()?;
+    .run()
+    .await?;
 
     Ok(())
+}
+
+async fn index() -> impl Responder {
+    NamedFile::open("static/websocket.html")
 }
 
 fn setup_logging() -> pretty_env_logger::env_logger::Logger {

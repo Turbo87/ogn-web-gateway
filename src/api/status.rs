@@ -1,6 +1,5 @@
 use actix::prelude::*;
-use actix_web::{web, Error, Responder};
-use futures::future::Future;
+use actix_web::{error::ErrorInternalServerError, web, Responder};
 use serde::Serialize;
 
 use systemstat::{self, Platform};
@@ -14,24 +13,22 @@ struct Status {
     positions: Option<u64>,
 }
 
-pub fn get(
-    gateway: web::Data<Addr<gateway::Gateway>>,
-) -> impl Future<Item = impl Responder, Error = Error> {
-    gateway
+pub async fn get(gateway: web::Data<Addr<gateway::Gateway>>) -> impl Responder {
+    let gateway_status = gateway
         .send(gateway::RequestStatus)
-        .from_err::<Error>()
-        .and_then(|gateway_status| {
-            let sys = systemstat::System::new();
+        .await
+        .map_err(ErrorInternalServerError)?;
 
-            let load = sys
-                .load_average()
-                .ok()
-                .map(|load| (load.one, load.five, load.fifteen));
+    let sys = systemstat::System::new();
 
-            Ok(web::Json(Status {
-                load,
-                users: gateway_status.users,
-                positions: gateway_status.record_count,
-            }))
-        })
+    let load = sys
+        .load_average()
+        .ok()
+        .map(|load| (load.one, load.five, load.fifteen));
+
+    Ok::<_, actix_web::Error>(web::Json(Status {
+        load,
+        users: gateway_status.users,
+        positions: gateway_status.record_count,
+    }))
 }
