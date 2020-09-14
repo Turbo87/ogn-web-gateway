@@ -5,7 +5,7 @@ authors = ["Tobias Bieniek <tobias.bieniek@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix = "0.8.3"
+actix = "0.10.0"
 actix-cors = "0.1.0"
 actix-files = "0.1.7"
 actix-ogn = "0.3"
