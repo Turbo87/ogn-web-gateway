@@ -5,7 +5,6 @@ use std::time::Duration;
 use actix::prelude::*;
 use actix_ogn::OGNMessage;
 use chrono::prelude::*;
-use futures::Future;
 use log::{debug, error, warn};
 
 use crate::geo::BoundingBox;
@@ -42,16 +41,14 @@ impl Gateway {
         let fut = self
             .redis
             .send(redis::CountOGNPositions)
-            .map_err(|error| {
-                warn!("Could not count OGN position records in redis: {}", error);
-            })
             .into_actor(self)
-            .and_then(|result, act, _ctx| {
-                if act.record_count.is_none() || result.is_ok() {
-                    act.record_count = result.ok();
+            .map(|result, act, _ctx| match result {
+                Err(error) => warn!("Could not count OGN position records in redis: {}", error),
+                Ok(result) => {
+                    if act.record_count.is_none() || result.is_ok() {
+                        act.record_count = result.ok();
+                    }
                 }
-
-                fut::ok::<(), (), Self>(())
             });
 
         ctx.spawn(fut);
@@ -65,28 +62,24 @@ impl Gateway {
             let fut = self
                 .redis
                 .send(redis::AddOGNPositions { positions: buffer })
-                .map_err(|error| {
-                    error!(
-                        "Could not flush new OGN position records to redis: {}",
-                        error
-                    )
-                })
                 .into_actor(self)
-                .and_then(move |result, act, _ctx| {
+                .map(move |result, act, _ctx| {
                     match result {
-                        Ok(()) => {
+                        Ok(Ok(_)) => {
                             debug!("Flushed {} OGN position records to redis", &count);
                             if act.record_count.is_some() {
                                 act.record_count = Some(act.record_count.unwrap() + count as u64);
                             }
                         }
+                        Ok(Err(error)) => error!(
+                            "Could not flush new OGN position records to redis: {}",
+                            error
+                        ),
                         Err(error) => error!(
                             "Could not flush new OGN position records to redis: {}",
                             error
                         ),
                     };
-
-                    fut::ok::<(), (), Self>(())
                 });
 
             ctx.spawn(fut);
@@ -97,45 +90,42 @@ impl Gateway {
         let fut = self
             .redis
             .send(redis::DropOldOGNPositions)
-            .map_err(|error| {
-                warn!(
+            .into_actor(self)
+            .map(|result, act, _ctx| match result {
+                Err(error) => warn!(
                     "Could not drop outdated OGN position records from redis: {}",
                     error
-                );
-            })
-            .into_actor(self)
-            .and_then(|result, act, _ctx| {
-                if let Some(current_count) = act.record_count {
-                    if let Ok(result) = result {
-                        act.record_count = Some(current_count + result);
+                ),
+                Ok(result) => {
+                    if let Some(current_count) = act.record_count {
+                        if let Ok(result) = result {
+                            act.record_count = Some(current_count + result);
+                        }
                     }
                 }
-
-                fut::ok::<(), (), Self>(())
             });
 
         ctx.spawn(fut);
     }
 
     fn update_ignore_list(&self, ctx: &mut Context<Self>) {
-        let fut = self
-            .redis
-            .send(redis::ReadOGNIgnore)
-            .map_err(|error| {
-                warn!("Could not read OGN ignore list from redis: {}", error);
-            })
-            .into_actor(self)
-            .and_then(|result, act, _ctx| {
-                if let Ok(result) = result {
-                    act.ignore_list = HashSet::from_iter(result);
-                    debug!(
-                        "Updated OGN ignore list from redis: {} records",
-                        act.ignore_list.len()
-                    );
-                }
-
-                fut::ok::<(), (), Self>(())
-            });
+        let fut =
+            self.redis
+                .send(redis::ReadOGNIgnore)
+                .into_actor(self)
+                .map(|result, act, _ctx| match result {
+                    Err(error) => {
+                        warn!("Could not read OGN ignore list from redis: {}", error);
+                    }
+                    Ok(Ok(result)) => {
+                        act.ignore_list = HashSet::from_iter(result);
+                        debug!(
+                            "Updated OGN ignore list from redis: {} records",
+                            act.ignore_list.len()
+                        );
+                    }
+                    _ => {}
+                });
 
         ctx.spawn(fut);
     }
@@ -197,6 +187,7 @@ impl Handler<RequestStatus> for Gateway {
 
 /// New websocket client has connected.
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Connect {
     pub addr: Addr<WSClient>,
 }
@@ -213,6 +204,7 @@ impl Handler<Connect> for Gateway {
 
 /// Websocket client has disconnected.
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Disconnect {
     pub addr: Addr<WSClient>,
 }
@@ -236,6 +228,7 @@ impl Handler<Disconnect> for Gateway {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct SubscribeToId {
     pub id: String,
     pub addr: Addr<WSClient>,
@@ -253,6 +246,7 @@ impl Handler<SubscribeToId> for Gateway {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct UnsubscribeFromId {
     pub id: String,
     pub addr: Addr<WSClient>,
@@ -271,6 +265,7 @@ impl Handler<UnsubscribeFromId> for Gateway {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct SetBoundingBox {
     pub addr: Addr<WSClient>,
     pub bbox: BoundingBox,

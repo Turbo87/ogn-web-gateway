@@ -1,6 +1,8 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use actix::prelude::*;
+use actix_web::client::WsProtocolError;
 use actix_web_actors::ws;
 
 use crate::gateway;
@@ -9,11 +11,11 @@ use crate::geo::BoundingBox;
 pub struct WSClient {
     fast_buffer: String,
     slow_buffer: String,
-    gateway: Addr<gateway::Gateway>,
+    gateway: Arc<Addr<gateway::Gateway>>,
 }
 
 impl WSClient {
-    pub fn new(gateway: Addr<gateway::Gateway>) -> WSClient {
+    pub fn new(gateway: Arc<Addr<gateway::Gateway>>) -> WSClient {
         WSClient {
             fast_buffer: String::new(),
             slow_buffer: String::new(),
@@ -84,6 +86,7 @@ impl Actor for WSClient {
 }
 
 #[derive(Message, Clone)]
+#[rtype(result = "()")]
 pub struct SendTextFast(pub String);
 
 impl Handler<SendTextFast> for WSClient {
@@ -99,6 +102,7 @@ impl Handler<SendTextFast> for WSClient {
 }
 
 #[derive(Message, Clone)]
+#[rtype(result = "()")]
 pub struct SendTextSlow(pub String);
 
 impl Handler<SendTextSlow> for WSClient {
@@ -114,12 +118,12 @@ impl Handler<SendTextSlow> for WSClient {
 }
 
 /// WebSocket message handler
-impl StreamHandler<ws::Message, ws::ProtocolError> for WSClient {
-    fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
+impl StreamHandler<Result<ws::Message, WsProtocolError>> for WSClient {
+    fn handle(&mut self, msg: Result<ws::Message, WsProtocolError>, ctx: &mut Self::Context) {
         match msg {
-            ws::Message::Ping(msg) => ctx.pong(&msg),
-            ws::Message::Close(_) => ctx.stop(),
-            ws::Message::Text(text) => self.handle_message(&text, ctx),
+            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
+            Ok(ws::Message::Close(_)) => ctx.stop(),
+            Ok(ws::Message::Text(text)) => self.handle_message(&text, ctx),
             _ => {}
         }
     }

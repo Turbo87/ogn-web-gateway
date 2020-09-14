@@ -5,12 +5,12 @@ authors = ["Tobias Bieniek <tobias.bieniek@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix = "0.8.3"
-actix-cors = "0.1.0"
-actix-files = "0.1.7"
-actix-ogn = "0.3"
-actix-web = { version = "1.0.9", features = ["client", "ssl"] }
-actix-web-actors = "1.0.4"
+actix = "0.10.0"
+actix-cors = "0.3.0"
+actix-files = "0.3.0"
+actix-ogn = "0.4.0"
+actix-web = { version = "3.0.0", features = ["default", "openssl"] }
+actix-web-actors = "3.0.0"
 anyhow = "1.0.32"
 bincode = "1.3.1"
 chrono = "0.4.15"

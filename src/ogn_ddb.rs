@@ -3,8 +3,7 @@ use std::time::Duration;
 
 use actix::prelude::*;
 use actix_web::client::Client;
-use futures::Future;
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 
 use crate::redis::*;
@@ -73,27 +72,50 @@ struct DeviceInfo {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 struct Update;
 
 impl Handler<Update> for OGNDevicesUpdater {
-    type Result = ();
+    type Result = ResponseActFuture<Self, ()>;
 
-    fn handle(&mut self, _msg: Update, ctx: &mut Self::Context) {
-        info!("Downloading OGN Device Database…");
+    fn handle(&mut self, _msg: Update, _ctx: &mut Self::Context) -> Self::Result {
+        Box::pin(
+            async {
+                info!("Downloading OGN Device Database…");
+                let response = Client::default()
+                    .get("https://ddb.glidernet.org/download/?j=1&t=1")
+                    .send()
+                    .await;
 
-        Client::default()
-            .get("https://ddb.glidernet.org/download/?j=1&t=1")
-            .send()
-            .map_err(|error| {
-                warn!("OGN Device Database download failed: {}", error);
-            })
-            .and_then(|mut response| {
-                response.json().limit(4_000_000).map_err(|error| {
-                    error!("OGN Device Database parsing failed: {}", error);
-                })
-            })
+                let mut response = match response {
+                    Err(error) => {
+                        warn!("OGN Device Database download failed: {}", error);
+                        return None;
+                    }
+                    Ok(response) => response,
+                };
+
+                let response: OGNDDBResponse = match response.json().limit(4_000_000).await {
+                    Err(error) => {
+                        error!("OGN Device Database parsing failed: {}", error);
+                        return None;
+                    }
+                    Ok(response) => response,
+                };
+
+                info!(
+                    "OGN Device Database contains {} devices",
+                    response.devices.len()
+                );
+                Some(response)
+            }
             .into_actor(self)
-            .map(|response: OGNDDBResponse, act, _ctx| {
+            .map(|response, act: &mut Self, _ctx| {
+                let response = match response {
+                    None => return,
+                    Some(response) => response,
+                };
+
                 let devices: HashMap<_, _> = response
                     .devices
                     .iter()
@@ -134,17 +156,18 @@ impl Handler<Update> for OGNDevicesUpdater {
                     })
                     .collect();
 
+                info!("Updating OGN Device Database…");
                 match act
                     .redis
                     .try_send(WriteOGNDDB(serde_json::to_string(&devices).unwrap()))
                 {
                     Ok(_) => {
-                        debug!("Updated OGN Device Database");
+                        info!("Updated OGN Device Database");
                     }
                     Err(error) => {
                         error!("OGN Device Database update failed: {}", error);
                     }
-                }
+                };
 
                 let ignored_device_ids = response
                     .devices
@@ -160,15 +183,16 @@ impl Handler<Update> for OGNDevicesUpdater {
                     })
                     .collect::<Vec<_>>();
 
+                info!("Updating OGN ignore list…");
                 match act.redis.try_send(WriteOGNIgnore(ignored_device_ids)) {
                     Ok(_) => {
-                        debug!("Updated OGN ignore list");
+                        info!("Updated OGN ignore list");
                     }
                     Err(error) => {
                         error!("OGN ignore list update failed: {}", error);
                     }
-                }
-            })
-            .wait(ctx);
+                };
+            }),
+        )
     }
 }
