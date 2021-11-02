@@ -1,19 +1,6 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":automergePatch",
-    ":dependencyDashboard",
-    ":semanticCommitsDisabled"
-  ],
-  "packageRules": [
-    {
-      "matchCurrentVersion": ">= 1.0.0",
-      "updateTypes": ["minor"],
-      "automerge": true
-    },
-    {
-      "depTypeList": ["devDependencies"],
-      "automerge": true
-    }
+    "local>Turbo87/renovate-config"
   ]
 }
