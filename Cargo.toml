@@ -11,7 +11,7 @@ actix-files = "0.3.0"
 actix-ogn = "0.4.0"
 actix-web = { version = "3.3.2", features = ["default", "openssl"] }
 actix-web-actors = "3.0.0"
-anyhow = "1.0.50"
+anyhow = "1.0.51"
 bincode = "1.3.3"
 chrono = "0.4.19"
 clap = "2.33.3"
