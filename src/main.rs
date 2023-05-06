@@ -6,7 +6,7 @@ use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_ogn::OGNActor;
 use ::actix_web::middleware::Logger;
-use ::actix_web::{web, App, HttpServer};
+use ::actix_web::{web, App, HttpServer, Responder};
 use ::anyhow::{anyhow, Context, Result};
 use ::clap::{self, value_t, Arg};
 use ::log::debug;
@@ -24,7 +24,6 @@ mod ws_client;
 use crate::gateway::Gateway;
 use crate::ogn_ddb::OGNDevicesUpdater;
 use crate::redis::RedisExecutor;
-use actix_web::Responder;
 
 const REDIS_WORKERS: usize = 7;
 
@@ -102,8 +101,8 @@ async fn main() -> Result<()> {
     // Create Http server with websocket support
     HttpServer::new(move || {
         App::new()
-            .data(gateway.clone())
-            .data(redis_executor_addr.clone())
+            .app_data(web::Data::new(gateway.clone()))
+            .app_data(web::Data::new(redis_executor_addr.clone()))
             .wrap(Logger::default())
             .service(
                 web::scope("/api")

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use actix::prelude::*;
-use actix_web::client::Client;
+use awc::Client;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 
