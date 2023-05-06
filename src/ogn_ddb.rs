@@ -95,7 +95,7 @@ impl Handler<Update> for OGNDevicesUpdater {
                     Ok(response) => response,
                 };
 
-                let response: OGNDDBResponse = match response.json().limit(4_000_000).await {
+                let response: OGNDDBResponse = match response.json().limit(32_000_000).await {
                     Err(error) => {
                         error!("OGN Device Database parsing failed: {}", error);
                         return None;
