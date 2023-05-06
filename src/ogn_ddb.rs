@@ -38,7 +38,7 @@ struct OGNDDBRecord {
     registration: String,
     cn: String,
     tracked: String,
-    identified: String,
+    #[allow(unused)] identified: String,
 }
 
 impl OGNDDBRecord {
