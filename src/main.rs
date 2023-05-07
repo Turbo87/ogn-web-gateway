@@ -1,16 +1,16 @@
 use std::env;
 use std::net::{IpAddr, SocketAddr};
 
-use ::actix::prelude::*;
-use ::actix_cors::Cors;
-use ::actix_files::NamedFile;
-use ::actix_ogn::OGNActor;
-use ::actix_web::middleware::Logger;
-use ::actix_web::{web, App, HttpServer, Responder};
-use ::anyhow::{anyhow, Context, Result};
-use ::clap::{self, value_t, Arg};
-use ::log::debug;
-use ::r2d2_redis::RedisConnectionManager;
+use actix::prelude::*;
+use actix_cors::Cors;
+use actix_files::NamedFile;
+use actix_ogn::OGNActor;
+use actix_web::middleware::Logger;
+use actix_web::{web, App, HttpServer, Responder};
+use anyhow::{anyhow, Context, Result};
+use clap::{self, value_t, Arg};
+use log::debug;
+use r2d2_redis::RedisConnectionManager;
 
 mod api;
 mod gateway;
