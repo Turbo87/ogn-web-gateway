@@ -30,26 +30,19 @@ const REDIS_WORKERS: usize = 7;
 #[actix_web::main]
 async fn main() -> Result<()> {
     let logger = setup_logging();
+    log::set_max_level(logger.filter());
 
-    if let Ok(sentry_dsn) = env::var("SENTRY_DSN") {
-        let log_integration =
-            sentry::integrations::log::LogIntegration::default().with_env_logger_dest(Some(logger));
-
-        let sentry_options = sentry::ClientOptions {
-            // reads sentry DSN from `SENTRY_DSN` environment variable
+    let _sentry = if let Ok(sentry_dsn) = env::var("SENTRY_DSN") {
+        let sentrylog = sentry::integrations::log::SentryLogger::with_dest(logger);
+        log::set_boxed_logger(Box::new(sentrylog)).unwrap();
+        Some(sentry::init(sentry::ClientOptions {
             dsn: Some(sentry_dsn.parse()?),
             ..Default::default()
-        }
-        .add_integration(log_integration);
-
-        let _sentry = sentry::init(sentry_options);
+        }))
     } else {
-        let max_level = logger.filter();
-        let r = log::set_boxed_logger(Box::new(logger));
-        if r.is_ok() {
-            log::set_max_level(max_level);
-        }
-    }
+        log::set_boxed_logger(Box::new(logger)).unwrap();
+        None
+    };
 
     let matches = clap::App::new("OGN Web Gateway")
         .arg(
