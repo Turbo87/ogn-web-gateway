@@ -36,6 +36,7 @@ Finally we can use [cargo] to download all necessary dependencies, compile the
 application and then run it:
 
 ```bash
+export OGN_CORS_ORIGIN=http://localhost
 cargo run --release
 ```
 
