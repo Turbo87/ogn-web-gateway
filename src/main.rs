@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
     let logger = setup_logging();
     log::set_max_level(logger.filter());
 
-    let _sentry = if let Ok(sentry_dsn) = env::var("SENTRY_DSN") {
+    let _sentry = if let Ok(sentry_dsn) = env::var("OGN_SENTRY_DSN") {
         let sentrylog = sentry::integrations::log::SentryLogger::with_dest(logger);
         log::set_boxed_logger(Box::new(sentrylog)).unwrap();
         Some(sentry::init(sentry::ClientOptions {
@@ -64,9 +64,9 @@ async fn main() -> Result<()> {
     let listen_host = value_t!(matches.value_of("host"), IpAddr)?;
     let listen_port = value_t!(matches.value_of("port"), u16)?;
 
-    let redis_url = env::var("REDIS_URL").context("REDIS_URL must be set")?;
+    let redis_url = env::var("OGN_REDIS_URL").context("OGN_REDIS_URL must be set")?;
     let redis_url = r2d2_redis::redis::parse_redis_url(&redis_url)
-        .map_err(|_| anyhow!("REDIS_URL could not be parsed"))?;
+        .map_err(|_| anyhow!("OGN_REDIS_URL could not be parsed"))?;
 
     let redis_connection_manager = RedisConnectionManager::new(redis_url)?;
     let redis_pool = r2d2_redis::r2d2::Pool::builder().build(redis_connection_manager)?;
