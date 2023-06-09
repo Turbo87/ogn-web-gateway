@@ -29,13 +29,14 @@ Before continuing make sure to set the `REDIS_URL` environment variable so
 that ogn-web-gateway known what Redis server it should try to connect to:
 
 ```bash
-export REDIS_URL=redis://localhost
+export OGN_REDIS_URL=redis://localhost
 ```
 
 Finally we can use [cargo] to download all necessary dependencies, compile the
 application and then run it:
 
 ```bash
+export OGN_CORS_ORIGIN=http://localhost
 cargo run --release
 ```
 

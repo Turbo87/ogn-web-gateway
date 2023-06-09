@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use actix::prelude::*;
-use actix_web::client::Client;
+use awc::Client;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 
@@ -38,7 +38,7 @@ struct OGNDDBRecord {
     registration: String,
     cn: String,
     tracked: String,
-    identified: String,
+    #[allow(unused)] identified: String,
 }
 
 impl OGNDDBRecord {
@@ -95,7 +95,7 @@ impl Handler<Update> for OGNDevicesUpdater {
                     Ok(response) => response,
                 };
 
-                let response: OGNDDBResponse = match response.json().limit(4_000_000).await {
+                let response: OGNDDBResponse = match response.json().limit(32_000_000).await {
                     Err(error) => {
                         error!("OGN Device Database parsing failed: {}", error);
                         return None;

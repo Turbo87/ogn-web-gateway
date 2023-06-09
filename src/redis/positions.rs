@@ -232,7 +232,7 @@ trait OGNRedisCommands: Commands {
         for result in results_iter {
             let record = result?;
             let timestamp = bucket_time + i64::from(record.seconds);
-            let time = Utc.timestamp(timestamp, 0);
+            let time = Utc.timestamp_opt(timestamp, 0).unwrap();
 
             vec.push(OGNPosition {
                 time,

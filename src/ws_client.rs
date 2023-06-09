@@ -2,8 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use actix::prelude::*;
-use actix_web::client::WsProtocolError;
-use actix_web_actors::ws;
+use actix_web_actors::ws::{self, ProtocolError};
 
 use crate::gateway;
 use crate::geo::BoundingBox;
@@ -46,14 +45,14 @@ impl WSClient {
 
     pub fn flush_fast(&mut self, ctx: &mut <Self as Actor>::Context) {
         if !self.fast_buffer.is_empty() {
-            ctx.text(&self.fast_buffer);
+            ctx.text(self.fast_buffer.as_str());
             self.fast_buffer.clear();
         }
     }
 
     pub fn flush_slow(&mut self, ctx: &mut <Self as Actor>::Context) {
         if !self.slow_buffer.is_empty() {
-            ctx.text(&self.slow_buffer);
+            ctx.text(self.slow_buffer.as_str());
             self.slow_buffer.clear();
         }
     }
@@ -118,8 +117,8 @@ impl Handler<SendTextSlow> for WSClient {
 }
 
 /// WebSocket message handler
-impl StreamHandler<Result<ws::Message, WsProtocolError>> for WSClient {
-    fn handle(&mut self, msg: Result<ws::Message, WsProtocolError>, ctx: &mut Self::Context) {
+impl StreamHandler<Result<ws::Message, ProtocolError>> for WSClient {
+    fn handle(&mut self, msg: Result<ws::Message, ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Close(_)) => ctx.stop(),

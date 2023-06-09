@@ -12,9 +12,8 @@ pub async fn get(redis: web::Data<Addr<redis::RedisExecutor>>) -> impl Responder
 
     let response = devices
         .map_err(ErrorInternalServerError)?
-        .with_header("Access-Control-Allow-Origin", "*")
-        .with_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        .with_header("Content-Type", "application/json");
+        .customize()
+        .insert_header(("Content-Type", "application/json"));
 
     Ok::<_, actix_web::Error>(response)
 }
