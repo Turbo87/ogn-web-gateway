@@ -1,0 +1,11 @@
+version: '3'
+services:
+  ogn-web-gateway:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://redis
+      RUST_LOG: ogn_web_gateway=debug
+  redis:
+    image: redis
