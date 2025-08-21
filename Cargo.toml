@@ -19,7 +19,7 @@ itertools = "0.10.5"
 lazy_static = "1.4.0"
 log = "0.4"
 pretty_env_logger = "0.4"
-r2d2_redis = "0.13"
+r2d2_redis = "0.14"
 regex = "1"
 sentry = { version = "0.20.1", features = ["default", "log", "env_logger"] }
 serde = { version = "1.0.156", features = ["derive"] }
